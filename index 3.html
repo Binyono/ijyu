@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>移住さがし</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Noto Sans JP',sans-serif; background:#f4f1eb; height:100dvh; display:flex; flex-direction:column; overflow:hidden; }
+
+header {
+  background:#fff; border-bottom:1px solid #e0dbd2;
+  display:flex; align-items:center; gap:12px;
+  padding:0 16px; height:52px; flex-shrink:0;
+  box-shadow:0 1px 6px rgba(0,0,0,0.06); z-index:1000;
+}
+.logo { font-size:18px; font-weight:700; color:#3a6b4a; letter-spacing:1px; white-space:nowrap; }
+.logo span { color:#e07b39; }
+.search-bar {
+  flex:1; background:#f4f1eb; border-radius:8px;
+  display:flex; align-items:center; padding:7px 12px; gap:6px;
+}
+.search-bar input { border:none; background:transparent; font-family:inherit; font-size:13px; outline:none; width:100%; color:#333; }
+.search-bar input::placeholder { color:#bbb; }
+
+.filter-bar {
+  background:#fff; border-bottom:1px solid #e8e4dc;
+  padding:10px 12px; display:flex; gap:6px; overflow-x:auto; flex-shrink:0;
+  z-index:999;
+}
+.filter-bar::-webkit-scrollbar { display:none; }
+.chip {
+  padding:6px 14px; border-radius:50px; font-size:12px; white-space:nowrap;
+  border:1.5px solid #ddd; background:white; color:#666;
+  cursor:pointer; font-family:inherit; flex-shrink:0; transition:all 0.15s;
+}
+.chip.active-green { border-color:#3a6b4a; background:#3a6b4a; color:white; font-weight:700; }
+.chip.active-orange { border-color:#e07b39; background:#e07b39; color:white; font-weight:700; }
+
+.main { display:flex; flex:1; overflow:hidden; position:relative; }
+
+#map { flex:1; z-index:1; } .leaflet-container { z-index:1 !important; }
+
+/* サイドパネル（PC） */
+.panel {
+  width:280px; background:#fff; border-left:1px solid #e0dbd2;
+  display:flex; flex-direction:column; overflow:hidden; z-index:2;
+}
+.panel-count {
+  padding:12px 14px 8px; font-size:12px; color:#888;
+  border-bottom:1px solid #f0ede6; flex-shrink:0;
+}
+.panel-count strong { color:#3a6b4a; font-size:16px; }
+.panel-list { flex:1; overflow-y:auto; }
+.panel-list::-webkit-scrollbar { width:3px; }
+.panel-list::-webkit-scrollbar-thumb { background:#ddd; border-radius:3px; }
+
+.pitem {
+  display:flex; gap:10px; padding:12px 14px;
+  border-bottom:1px solid #f4f1eb; cursor:pointer; transition:background 0.15s;
+}
+.pitem:hover, .pitem.active { background:#f0f7f2; }
+.pitem-emoji {
+  width:48px; height:44px; border-radius:8px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; font-size:22px;
+}
+.pitem-name { font-size:12px; font-weight:700; color:#222; line-height:1.3; margin-bottom:2px; }
+.pitem-loc { font-size:10px; color:#999; margin-bottom:4px; }
+.pitem-tags { display:flex; gap:3px; flex-wrap:wrap; }
+.ptag { font-size:9px; padding:2px 6px; border-radius:3px; background:#f4f1eb; color:#777; }
+
+/* ボトムシート（スマホ） */
+.bottom-sheet {
+  display:none;
+  position:fixed; bottom:0; left:0; right:0; z-index:999;
+  background:#fff; border-radius:16px 16px 0 0;
+  box-shadow:0 -4px 20px rgba(0,0,0,0.12);
+  max-height:45vh; flex-direction:column;
+}
+.sheet-handle {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 16px 6px; flex-shrink:0; cursor:pointer;
+}
+.sheet-handle-bar {
+  width:36px; height:4px; background:#ddd; border-radius:4px; margin:0 auto;
+}
+.sheet-count { font-size:12px; color:#888; }
+.sheet-count strong { color:#3a6b4a; font-size:15px; }
+.sheet-list { overflow-y:auto; flex:1; }
+
+/* ポップアップ */
+.leaflet-popup-content-wrapper {
+  border-radius:14px !important;
+  box-shadow:0 8px 24px rgba(0,0,0,0.15) !important;
+  padding:0 !important; overflow:hidden;
+}
+.leaflet-popup-content { margin:0 !important; width:240px !important; }
+.popup-img {
+  height:100px; display:flex; align-items:center;
+  justify-content:center; font-size:44px;
+}
+.popup-body { padding:12px 14px; }
+.popup-name { font-size:13px; font-weight:700; color:#222; margin-bottom:3px; }
+.popup-loc { font-size:11px; color:#999; margin-bottom:8px; }
+.popup-tags { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:10px; }
+.popup-tag { font-size:10px; padding:2px 8px; border-radius:4px; background:#f4f1eb; color:#777; }
+.popup-price { font-size:13px; font-weight:700; margin-bottom:10px; }
+.popup-btn {
+  display:block; width:100%; padding:9px; border:none; border-radius:8px;
+  color:white; font-family:inherit; font-size:12px; cursor:pointer; font-weight:500;
+}
+
+@media (max-width:640px) {
+  .panel { display:none; }
+  .bottom-sheet {
+    display:flex;
+    position:fixed; bottom:0; left:0; right:0; z-index:999;
+    max-height:60vh;
+  }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">移住<span>さがし</span></div>
+  <div class="search-bar">
+    <span style="color:#bbb;font-size:13px">🔍</span>
+    <input type="text" id="search" placeholder="地名・施設名で検索...">
+  </div>
+</header>
+
+<div class="filter-bar">
+  <button class="chip active-green" data-type="all">すべて</button>
+  <button class="chip" data-type="trial">お試し移住</button>
+  <button class="chip" data-type="dual">二拠点施設</button>
+  <button class="chip" data-type="share">シェアハウス</button>
+  <div style="width:1px;background:#e8e4dc;margin:0 4px;flex-shrink:0"></div>
+  <button class="chip active-orange" data-area="all">全国</button>
+  <button class="chip" data-area="hokkaido">北海道</button>
+  <button class="chip" data-area="tohoku">東北</button>
+  <button class="chip" data-area="kanto">関東</button>
+  <button class="chip" data-area="chubu">中部</button>
+  <button class="chip" data-area="kinki">近畿</button>
+  <button class="chip" data-area="chugoku">中国</button>
+  <button class="chip" data-area="shikoku">四国</button>
+  <button class="chip" data-area="kyushu">九州</button>
+</div>
+
+<div class="main">
+  <div id="map"></div>
+
+  <!-- PC サイドパネル -->
+  <div class="panel">
+    <div class="panel-count"><strong id="count">15</strong> 件表示中</div>
+    <div class="panel-list" id="panel-list"></div>
+  </div>
+
+  <!-- スマホ ボトムシート -->
+  <div class="bottom-sheet" id="bottom-sheet" style="max-height:52px;">
+    <div class="sheet-handle" id="sheet-toggle">
+      <div style="flex:1"></div>
+      <div class="sheet-handle-bar"></div>
+      <div style="flex:1;text-align:right">
+        <span class="sheet-count"><strong id="count2">0</strong> 件</span>
+      </div>
+    </div>
+    <div class="sheet-list" id="sheet-list"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const facilities = [
+  { id:1,  name:"北海道ニセコ お試し住宅",     area:"hokkaido", type:"trial", emoji:"🏔️", location:"北海道虻田郡ニセコ町",   tags:["お試し移住","ペット可","温泉地"],    price:"¥3,500〜/泊", lat:42.804, lng:140.687 },
+  { id:2,  name:"函館 二拠点ベース",           area:"hokkaido", type:"dual",  emoji:"🦑", location:"北海道函館市",          tags:["二拠点","海が見える","コワーキング"], price:"¥45,000〜/月", lat:41.773, lng:140.726 },
+  { id:3,  name:"弘前 りんごの家",             area:"tohoku",   type:"share", emoji:"🍎", location:"青森県弘前市",          tags:["シェアハウス","農業体験","補助金あり"],price:"¥35,000〜/月", lat:40.602, lng:140.464 },
+  { id:4,  name:"仙台 サテライトオフィス付き", area:"tohoku",   type:"dual",  emoji:"🏙️", location:"宮城県仙台市",          tags:["二拠点","コワーキング付"],           price:"¥60,000〜/月", lat:38.269, lng:140.869 },
+  { id:5,  name:"那須高原 森のシェア",         area:"kanto",    type:"share", emoji:"🌲", location:"栃木県那須町",          tags:["シェアハウス","山・自然","ペット可"],  price:"¥50,000〜/月", lat:37.066, lng:140.047 },
+  { id:6,  name:"葉山 お試し暮らし",           area:"kanto",    type:"trial", emoji:"🌊", location:"神奈川県葉山町",        tags:["お試し移住","海が見える","子連れOK"], price:"¥5,000〜/泊",  lat:35.273, lng:139.576 },
+  { id:7,  name:"軽井沢 ワーケーションベース", area:"kanto",    type:"dual",  emoji:"🏕️", location:"長野県軽井沢町",        tags:["二拠点","山・自然","コワーキング付"], price:"¥80,000〜/月", lat:36.348, lng:138.600 },
+  { id:8,  name:"白川郷 古民家ステイ",         area:"chubu",    type:"trial", emoji:"🏡", location:"岐阜県白川村",          tags:["お試し移住","世界遺産","補助金あり"], price:"¥6,000〜/泊",  lat:36.254, lng:136.906 },
+  { id:9,  name:"南伊豆 海辺の二拠点",         area:"chubu",    type:"dual",  emoji:"🐠", location:"静岡県南伊豆町",        tags:["二拠点","海が見える","ペット可"],     price:"¥55,000〜/月", lat:34.620, lng:138.797 },
+  { id:10, name:"京都西陣 町家シェア",         area:"kinki",    type:"share", emoji:"⛩️", location:"京都府京都市",          tags:["シェアハウス","町家","コワーキング付"],price:"¥58,000〜/月", lat:35.026, lng:135.745 },
+  { id:11, name:"淡路島 ワーケーション",       area:"kinki",    type:"dual",  emoji:"🌺", location:"兵庫県淡路市",          tags:["二拠点","海が見える","温泉地"],       price:"¥45,000〜/月", lat:34.424, lng:134.896 },
+  { id:12, name:"尾道 坂の上のお試し住宅",     area:"chugoku",  type:"trial", emoji:"🎨", location:"広島県尾道市",          tags:["お試し移住","海が見える","アート"],   price:"¥2,500〜/泊",  lat:34.408, lng:133.196 },
+  { id:13, name:"高知四万十 自然暮らし体験",   area:"shikoku",  type:"trial", emoji:"🐟", location:"高知県四万十市",        tags:["お試し移住","山・自然","補助金あり"], price:"¥3,000〜/泊",  lat:33.014, lng:132.939 },
+  { id:14, name:"糸島 海と山のシェアハウス",   area:"kyushu",   type:"share", emoji:"🌅", location:"福岡県糸島市",          tags:["シェアハウス","海が見える","子連れOK"],price:"¥40,000〜/月", lat:33.551, lng:130.197 },
+  { id:15, name:"屋久島 森の暮らし体験",       area:"kyushu",   type:"trial", emoji:"🌿", location:"鹿児島県屋久島町",      tags:["お試し移住","世界遺産","山・自然"],   price:"¥7,000〜/泊",  lat:30.337, lng:130.527 },
+  // === 自治体運営施設 ===
+  { id:18, name:"ゆーゆーキャビン", area:"kanto", type:"trial", emoji:"🏕️", location:"栃木県大田原市湯津上", tags:["お試し移住","温泉付き","自治体運営"], price:"¥2,000〜/日", lat:36.823, lng:140.173, url:"https://ohtawara-ijyu.jp/" },
+  { id:19, name:"ホタルの家", area:"kanto", type:"trial", emoji:"🏚️", location:"神奈川県足柄上郡山北町", tags:["お試し移住","古民家","自治体運営"], price:"要問合せ", lat:35.366, lng:139.079, url:"https://www.town.yamakita.kanagawa.jp/" },
+  { id:20, name:"大井町お試し住宅", area:"kanto", type:"trial", emoji:"🌿", location:"神奈川県足柄上郡大井町", tags:["お試し移住","自治体運営","農業体験"], price:"¥20,000〜/2週間", lat:35.335, lng:139.119, url:"https://www.town.oi.kanagawa.jp/site/iju/otamesijutaku.html" },
+  { id:21, name:"川根本町お試し住宅", area:"chubu", type:"trial", emoji:"🍵", location:"静岡県榛原郡川根本町", tags:["お試し移住","川根茶","自治体運営"], price:"無料", lat:35.118, lng:138.087, url:"https://www.town.kawanehon.shizuoka.jp/" },
+  { id:22, name:"西伊豆町お試し移住住宅", area:"chubu", type:"trial", emoji:"🌅", location:"静岡県賀茂郡西伊豆町", tags:["お試し移住","夕日百選","自治体運営"], price:"¥1,000/日", lat:34.769, lng:138.777, url:"https://iju.pref.shizuoka.jp/measure/503.html" },
+  { id:23, name:"安曇野市おためし住宅", area:"chubu", type:"trial", emoji:"🏔️", location:"長野県安曇野市", tags:["お試し移住","北アルプス","自治体運営"], price:"無料", lat:36.303, lng:137.903, url:"https://www.city.azumino.nagano.jp/" },
+  { id:24, name:"信濃町お試し住宅", area:"chubu", type:"trial", emoji:"🌲", location:"長野県上水内郡信濃町大字富濃3772-1", tags:["お試し移住","自治体運営","6泊無料"], price:"6泊無料〜", lat:36.847, lng:138.198, url:"https://www.town.shinano.lg.jp/" },
+  { id:25, name:"いすみ市お試し居住", area:"kanto", type:"trial", emoji:"🌊", location:"千葉県いすみ市", tags:["お試し移住","自治体運営","最大1週間"], price:"無料", lat:35.254, lng:140.369, url:"https://www.city.isumi.lg.jp/" },
+  { id:17, name:"秩父杉の家「絆」", area:"kanto", type:"trial", emoji:"🏠", location:"埼玉県秩父市野坂町", tags:["お試し移住","無料","移住相談"], price:"無料（飲食費は自己負担）", lat:35.991, lng:139.079, url:"https://www.chichibu-iju.com/otameshi.html" },
+  { id:16, name:"紲ya -ツナギヤ-",            area:"kinki",    type:"trial", emoji:"🏘️", location:"滋賀県米原市長岡1300",   tags:["お試し移住","一棟貸切","移住相談"],   price:"¥8,800〜/泊",  lat:35.319, lng:136.447, url:"https://tsunagiya-knw.jp/" },
+];
+
+const typeColors = {
+  trial: { btn:"#3a6b4a", bg:"#eef5f0", text:"#3a6b4a", img:"#c8dfc0" },
+  dual:  { btn:"#4a7ab5", bg:"#e8f0f8", text:"#4a7ab5", img:"#a8c4dc" },
+  share: { btn:"#e07b39", bg:"#fef0e6", text:"#e07b39", img:"#f0c8a0" },
+};
+const typeLabel = { trial:"お試し移住", dual:"二拠点施設", share:"シェアハウス" };
+const areaBounds = {
+  all:     [[24,122],[46,146]],
+  hokkaido:[[41,139],[46,146]],
+  tohoku:  [[37,138],[42,142]],
+  kanto:   [[34,136],[38,141]],
+  chubu:   [[33,135],[38,140]],
+  kinki:   [[33,134],[36,137]],
+  chugoku: [[33,130],[36,135]],
+  shikoku: [[32,132],[34,135]],
+  kyushu:  [[28,128],[34,133]],
+};
+
+let typeFilter = "all";
+let areaFilter = "all";
+let query = "";
+let markers = [];
+let sheetOpen = true;
+
+// 地図初期化
+const map = L.map('map').fitBounds(areaBounds.all);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution:'© OpenStreetMap contributors', maxZoom:18
+}).addTo(map);
+
+function createIcon(f) {
+  const c = typeColors[f.type];
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40">
+    <path d="M16 0C7.16 0 0 7.16 0 16c0 11 16 24 16 24s16-13 16-24C32 7.16 24.84 0 16 0z" fill="${c.btn}" opacity="0.95"/>
+    <circle cx="16" cy="15" r="9" fill="white"/>
+    <text x="16" y="19" text-anchor="middle" font-size="11">${f.emoji}</text>
+  </svg>`;
+  return L.divIcon({ html:svg, iconSize:[32,40], iconAnchor:[16,40], popupAnchor:[0,-42], className:'' });
+}
+
+function render() {
+  const filtered = facilities.filter(f => {
+    if (typeFilter !== "all" && f.type !== typeFilter) return false;
+    if (areaFilter !== "all" && f.area !== areaFilter) return false;
+    if (query && !f.name.includes(query) && !f.location.includes(query)) return false;
+    return true;
+  });
+
+  // マーカー更新
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+  filtered.forEach(f => {
+    const tc = typeColors[f.type];
+    const marker = L.marker([f.lat, f.lng], { icon: createIcon(f) }).addTo(map);
+    const popup = `
+      <div class="popup-img" style="background:${tc.img}">${f.emoji}</div>
+      <div class="popup-body">
+        <div class="popup-name">${f.name}</div>
+        <div class="popup-loc">📍 ${f.location}</div>
+        <div class="popup-tags">${f.tags.map(t=>`<span class="popup-tag">${t}</span>`).join('')}</div>
+        <div class="popup-price" style="color:${tc.text}">${f.price}</div>
+        ${f.url ? `<a class="popup-btn" href="${f.url}" target="_blank" style="background:${tc.btn};text-decoration:none;color:white;display:block;width:fit-content;margin:0 auto;padding:9px 24px;border-radius:8px;font-size:13px;font-weight:500">詳細を見る →</a>` : `<button class="popup-btn" style="background:${tc.btn};opacity:0.4;cursor:default">詳細準備中</button>`}
+      </div>`;
+    marker.bindPopup(popup, { maxWidth:240 });
+    markers.push(marker);
+  });
+
+  // エリア移動
+  map.fitBounds(areaBounds[areaFilter] || areaBounds.all, { animate:true });
+
+  // カウント更新
+  document.getElementById("count").textContent = filtered.length;
+  document.getElementById("count2").textContent = filtered.length;
+
+  // リスト生成
+  const html = filtered.map((f,i) => {
+    const tc = typeColors[f.type];
+    return `<div class="pitem" data-idx="${i}" onclick="focusMarker(${i})">
+      <div class="pitem-emoji" style="background:${tc.img}">${f.emoji}</div>
+      <div>
+        <div class="pitem-name">${f.name}</div>
+        <div class="pitem-loc">📍 ${f.location}</div>
+        <div class="pitem-tags">${f.tags.slice(0,2).map(t=>`<span class="ptag">${t}</span>`).join('')}</div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById("panel-list").innerHTML = html;
+  document.getElementById("sheet-list").innerHTML = html;
+
+  window._filtered = filtered;
+}
+
+function focusMarker(idx) {
+  const f = window._filtered[idx];
+  map.setView([f.lat, f.lng], 11, { animate:true });
+  markers[idx].openPopup();
+  document.querySelectorAll('.pitem').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll(`.pitem[data-idx="${idx}"]`).forEach(el => el.classList.add('active'));
+}
+
+// フィルター
+document.querySelectorAll("[data-type]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("[data-type]").forEach(b => b.className="chip");
+    btn.classList.add("active-green");
+    typeFilter = btn.dataset.type;
+    render();
+  });
+});
+document.querySelectorAll("[data-area]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("[data-area]").forEach(b => b.className="chip");
+    btn.classList.add("active-orange");
+    areaFilter = btn.dataset.area;
+    render();
+  });
+});
+document.getElementById("search").addEventListener("input", e => {
+  query = e.target.value;
+  render();
+});
+
+// ボトムシート開閉
+const sheet = document.getElementById("bottom-sheet");
+const handle = document.getElementById("sheet-toggle");
+let sheetExpanded = false;
+let touchStartY = 0;
+
+function expandSheet() {
+  sheetExpanded = true;
+  sheet.style.transition = "max-height 0.3s ease";
+  sheet.style.maxHeight = "60vh";
+}
+function collapseSheet() {
+  sheetExpanded = false;
+  sheet.style.transition = "max-height 0.3s ease";
+  sheet.style.maxHeight = "52px";
+}
+
+handle.addEventListener("touchstart", e => {
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+handle.addEventListener("touchend", e => {
+  const diff = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(diff) < 10) {
+    sheetExpanded ? collapseSheet() : expandSheet();
+  } else if (diff < -10) {
+    expandSheet();
+  } else if (diff > 10) {
+    collapseSheet();
+  }
+}, { passive: true });
+
+handle.addEventListener("click", () => {
+  sheetExpanded ? collapseSheet() : expandSheet();
+});
+
+map.on("click", () => { collapseSheet(); });
+
+render();
+</script>
+</body>
+</html>
