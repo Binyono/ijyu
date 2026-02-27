@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>移住さがし</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
@@ -41,7 +41,7 @@ header {
 
 .main { display:flex; flex:1; overflow:hidden; position:relative; }
 
-#map { flex:1; z-index:1; }
+#map { flex:1; z-index:1; } .leaflet-container { z-index:1 !important; }
 
 /* サイドパネル（PC） */
 .panel {
@@ -158,18 +158,13 @@ header {
     <div class="panel-list" id="panel-list"></div>
   </div>
 
-  <!-- スマホ フローティングボタン -->
-  <div id="floating-btn" style="display:none;position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:1000;background:#3a6b4a;color:white;border-radius:50px;padding:10px 22px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,0.2);white-space:nowrap;cursor:pointer;">
-    📋 <span id="count2">0</span>件のリストを見る
-  </div>
-
   <!-- スマホ ボトムシート -->
-  <div class="bottom-sheet" id="bottom-sheet" style="display:none;">
+  <div class="bottom-sheet" id="bottom-sheet" style="max-height:52px;">
     <div class="sheet-handle" id="sheet-toggle">
       <div style="flex:1"></div>
       <div class="sheet-handle-bar"></div>
       <div style="flex:1;text-align:right">
-        <span class="sheet-count">✕ 閉じる</span>
+        <span class="sheet-count"><strong id="count2">0</strong> 件</span>
       </div>
     </div>
     <div class="sheet-list" id="sheet-list"></div>
@@ -329,53 +324,43 @@ document.getElementById("search").addEventListener("input", e => {
   render();
 });
 
-// ボトムシート スワイプ開閉
+// ボトムシート開閉
 const sheet = document.getElementById("bottom-sheet");
 const handle = document.getElementById("sheet-toggle");
+let sheetExpanded = false;
+let touchStartY = 0;
 
-function openSheet() {
-  sheetOpen = true;
-  sheet.style.transition = "max-height 0.2s ease";
-  sheet.style.maxHeight = "45vh";
+function expandSheet() {
+  sheetExpanded = true;
+  sheet.style.transition = "max-height 0.3s ease";
+  sheet.style.maxHeight = "60vh";
 }
-function closeSheet() {
-  sheetOpen = false;
-  sheet.style.transition = "max-height 0.2s ease";
-  sheet.style.maxHeight = "32px";
+function collapseSheet() {
+  sheetExpanded = false;
+  sheet.style.transition = "max-height 0.3s ease";
+  sheet.style.maxHeight = "52px";
 }
-
-let _startY = 0;
-let _moved = false;
 
 handle.addEventListener("touchstart", e => {
-  _startY = e.touches[0].clientY;
-  _moved = false;
-  sheet.style.transition = "none";
-}, { passive: true });
-
-handle.addEventListener("touchmove", e => {
-  _moved = true;
-  const diff = e.touches[0].clientY - _startY;
-  if (sheetOpen) {
-    const base = window.innerHeight * 0.45;
-    sheet.style.maxHeight = Math.max(32, base - diff) + "px";
-  } else {
-    const moved = Math.max(0, -diff);
-    sheet.style.maxHeight = Math.min(window.innerHeight * 0.45, 32 + moved) + "px";
-  }
+  touchStartY = e.touches[0].clientY;
 }, { passive: true });
 
 handle.addEventListener("touchend", e => {
-  const diff = e.changedTouches[0].clientY - _startY;
-  if (!_moved) {
-    // タップ → トグル
-    sheetOpen ? closeSheet() : openSheet();
-  } else if (diff > 0) {
-    closeSheet();
-  } else {
-    openSheet();
+  const diff = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(diff) < 10) {
+    sheetExpanded ? collapseSheet() : expandSheet();
+  } else if (diff < -10) {
+    expandSheet();
+  } else if (diff > 10) {
+    collapseSheet();
   }
 }, { passive: true });
+
+handle.addEventListener("click", () => {
+  sheetExpanded ? collapseSheet() : expandSheet();
+});
+
+map.on("click", () => { collapseSheet(); });
 
 render();
 </script>
