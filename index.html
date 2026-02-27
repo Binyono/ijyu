@@ -185,7 +185,17 @@ const facilities = [
   { id:13, name:"高知四万十 自然暮らし体験",   area:"shikoku",  type:"trial", emoji:"🐟", location:"高知県四万十市",        tags:["お試し移住","山・自然","補助金あり"], price:"¥3,000〜/泊",  lat:33.014, lng:132.939 },
   { id:14, name:"糸島 海と山のシェアハウス",   area:"kyushu",   type:"share", emoji:"🌅", location:"福岡県糸島市",          tags:["シェアハウス","海が見える","子連れOK"],price:"¥40,000〜/月", lat:33.551, lng:130.197 },
   { id:15, name:"屋久島 森の暮らし体験",       area:"kyushu",   type:"trial", emoji:"🌿", location:"鹿児島県屋久島町",      tags:["お試し移住","世界遺産","山・自然"],   price:"¥7,000〜/泊",  lat:30.337, lng:130.527 },
-  { id:16, name:"紲ya -ツナギヤ-",            area:"kinki",    type:"trial", emoji:"🏘️", location:"滋賀県米原市長岡1300",   tags:["お試し移住","一棟貸切","移住相談"],   price:"¥8,800〜/泊",  lat:35.319, lng:136.447 },
+  // === 自治体運営施設 ===
+  { id:18, name:"ゆーゆーキャビン", area:"kanto", type:"trial", emoji:"🏕️", location:"栃木県大田原市湯津上", tags:["お試し移住","温泉付き","自治体運営"], price:"¥2,000〜/日", lat:36.823, lng:140.173, url:"https://ohtawara-ijyu.jp/" },
+  { id:19, name:"ホタルの家", area:"kanto", type:"trial", emoji:"🏚️", location:"神奈川県足柄上郡山北町", tags:["お試し移住","古民家","自治体運営"], price:"要問合せ", lat:35.366, lng:139.079, url:"https://www.town.yamakita.kanagawa.jp/" },
+  { id:20, name:"大井町お試し住宅", area:"kanto", type:"trial", emoji:"🌿", location:"神奈川県足柄上郡大井町", tags:["お試し移住","自治体運営","農業体験"], price:"¥20,000〜/2週間", lat:35.335, lng:139.119, url:"https://www.town.oi.kanagawa.jp/site/iju/otamesijutaku.html" },
+  { id:21, name:"川根本町お試し住宅", area:"chubu", type:"trial", emoji:"🍵", location:"静岡県榛原郡川根本町", tags:["お試し移住","川根茶","自治体運営"], price:"無料", lat:35.118, lng:138.087, url:"https://www.town.kawanehon.shizuoka.jp/" },
+  { id:22, name:"西伊豆町お試し移住住宅", area:"chubu", type:"trial", emoji:"🌅", location:"静岡県賀茂郡西伊豆町", tags:["お試し移住","夕日百選","自治体運営"], price:"¥1,000/日", lat:34.769, lng:138.777, url:"https://iju.pref.shizuoka.jp/measure/503.html" },
+  { id:23, name:"安曇野市おためし住宅", area:"chubu", type:"trial", emoji:"🏔️", location:"長野県安曇野市", tags:["お試し移住","北アルプス","自治体運営"], price:"無料", lat:36.303, lng:137.903, url:"https://www.city.azumino.nagano.jp/" },
+  { id:24, name:"信濃町お試し住宅", area:"chubu", type:"trial", emoji:"🌲", location:"長野県上水内郡信濃町大字富濃3772-1", tags:["お試し移住","自治体運営","6泊無料"], price:"6泊無料〜", lat:36.847, lng:138.198, url:"https://www.town.shinano.lg.jp/" },
+  { id:25, name:"いすみ市お試し居住", area:"kanto", type:"trial", emoji:"🌊", location:"千葉県いすみ市", tags:["お試し移住","自治体運営","最大1週間"], price:"無料", lat:35.254, lng:140.369, url:"https://www.city.isumi.lg.jp/" },
+  { id:17, name:"秩父杉の家「絆」", area:"kanto", type:"trial", emoji:"🏠", location:"埼玉県秩父市野坂町", tags:["お試し移住","無料","移住相談"], price:"無料（飲食費は自己負担）", lat:35.991, lng:139.079, url:"https://www.chichibu-iju.com/otameshi.html" },
+  { id:16, name:"紲ya -ツナギヤ-",            area:"kinki",    type:"trial", emoji:"🏘️", location:"滋賀県米原市長岡1300",   tags:["お試し移住","一棟貸切","移住相談"],   price:"¥8,800〜/泊",  lat:35.319, lng:136.447, url:"https://tsunagiya-knw.jp/" },
 ];
 
 const typeColors = {
@@ -249,7 +259,7 @@ function render() {
         <div class="popup-loc">📍 ${f.location}</div>
         <div class="popup-tags">${f.tags.map(t=>`<span class="popup-tag">${t}</span>`).join('')}</div>
         <div class="popup-price" style="color:${tc.text}">${f.price}</div>
-        <button class="popup-btn" style="background:${tc.btn}">詳細を見る →</button>
+        ${f.url ? `<a class="popup-btn" href="${f.url}" target="_blank" style="background:${tc.btn};text-decoration:none;color:white;display:block;width:fit-content;margin:0 auto;padding:9px 24px;border-radius:8px;font-size:13px;font-weight:500">詳細を見る →</a>` : `<button class="popup-btn" style="background:${tc.btn};opacity:0.4;cursor:default">詳細準備中</button>`}
       </div>`;
     marker.bindPopup(popup, { maxWidth:240 });
     markers.push(marker);
@@ -310,12 +320,53 @@ document.getElementById("search").addEventListener("input", e => {
   render();
 });
 
-// ボトムシート開閉
-document.getElementById("sheet-toggle").addEventListener("click", () => {
-  const sheet = document.getElementById("bottom-sheet");
-  sheetOpen = !sheetOpen;
-  sheet.style.maxHeight = sheetOpen ? "45vh" : "44px";
-});
+// ボトムシート スワイプ開閉
+const sheet = document.getElementById("bottom-sheet");
+const handle = document.getElementById("sheet-toggle");
+
+function openSheet() {
+  sheetOpen = true;
+  sheet.style.transition = "max-height 0.2s ease";
+  sheet.style.maxHeight = "45vh";
+}
+function closeSheet() {
+  sheetOpen = false;
+  sheet.style.transition = "max-height 0.2s ease";
+  sheet.style.maxHeight = "32px";
+}
+
+let _startY = 0;
+let _moved = false;
+
+handle.addEventListener("touchstart", e => {
+  _startY = e.touches[0].clientY;
+  _moved = false;
+  sheet.style.transition = "none";
+}, { passive: true });
+
+handle.addEventListener("touchmove", e => {
+  _moved = true;
+  const diff = e.touches[0].clientY - _startY;
+  if (sheetOpen) {
+    const base = window.innerHeight * 0.45;
+    sheet.style.maxHeight = Math.max(32, base - diff) + "px";
+  } else {
+    const moved = Math.max(0, -diff);
+    sheet.style.maxHeight = Math.min(window.innerHeight * 0.45, 32 + moved) + "px";
+  }
+}, { passive: true });
+
+handle.addEventListener("touchend", e => {
+  const diff = e.changedTouches[0].clientY - _startY;
+  if (!_moved) {
+    // タップ → トグル
+    sheetOpen ? closeSheet() : openSheet();
+  } else if (diff > 0) {
+    closeSheet();
+  } else {
+    openSheet();
+  }
+}, { passive: true });
 
 render();
 </script>
