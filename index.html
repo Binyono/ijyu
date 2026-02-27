@@ -101,7 +101,6 @@ transition: max-height 0.3s ease;
 .popup-tag { font-size:10px; padding:2px 8px; border-radius:4px; background:#f4f1eb; color:#777; }
 .popup-price { font-size:13px; font-weight:700; margin-bottom:10px; }
 
-/* ボタン：背景色と文字色が被らないよう color:white !important で上書き */
 .popup-link {
   display:block; width:fit-content; margin:0 auto;
   padding:9px 24px; border-radius:8px;
@@ -231,10 +230,42 @@ let query = "";
 let markers = [];
 let sheetExpanded = true;
 
+// 2時間圏内 ≒ 約150km を緯度経度のオフセットに換算（緯度1度≒111km）
+const TWO_HOUR_DEG = 1.35; // 約150km分
+
+// IPジオロケーションで現在地を取得し、2時間圏内を初期表示
+// 取得できなければ全国表示にフォールバック
+async function getInitialBounds() {
+  try {
+    const res = await fetch("https://ipapi.co/json/");
+    const data = await res.json();
+    if (data && data.latitude && data.longitude) {
+      const lat = parseFloat(data.latitude);
+      const lng = parseFloat(data.longitude);
+      // 日本国内かチェック（念のため）
+      if (lat >= 24 && lat <= 46 && lng >= 122 && lng <= 146) {
+        return [
+          [lat - TWO_HOUR_DEG, lng - TWO_HOUR_DEG * 1.4],
+          [lat + TWO_HOUR_DEG, lng + TWO_HOUR_DEG * 1.4]
+        ];
+      }
+    }
+  } catch(e) {
+    // 取得失敗時は全国表示
+  }
+  return areaBounds.all;
+}
+
 const map = L.map('map').fitBounds(areaBounds.all);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution:'© OpenStreetMap contributors', maxZoom:18
 }).addTo(map);
+
+// 初期表示：IPジオロケーションで現在地から2時間圏内に設定
+getInitialBounds().then(bounds => {
+  map.fitBounds(bounds, { animate: false });
+  render();
+});
 
 function createIcon(f) {
   const c = typeColors[f.type];
@@ -305,7 +336,10 @@ function render() {
     markers.push(marker);
   });
 
-  map.fitBounds(areaBounds[areaFilter] || areaBounds.all, { animate:true });
+  // エリアフィルターが選択されている場合はそちらを優先
+  if (areaFilter !== "all") {
+    map.fitBounds(areaBounds[areaFilter], { animate:true });
+  }
 
   document.getElementById("count").textContent = filtered.length;
   document.getElementById("count2").textContent = filtered.length;
@@ -355,8 +389,6 @@ document.getElementById("search").addEventListener("input", e => {
   query = e.target.value;
   render();
 });
-
-render();
 </script>
 
 </body>
