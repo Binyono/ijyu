@@ -339,7 +339,7 @@ async function getInitialBounds() {
   return areaBounds.all;
 }
 
-const map = L.map('map').fitBounds(areaBounds.all);
+const map = L.map('map', {zoomControl:true});
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution:'© OpenStreetMap contributors', maxZoom:18
 }).addTo(map);
