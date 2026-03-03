@@ -323,18 +323,18 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution:'© OpenStreetMap contributors', maxZoom:18
 }).addTo(map);
 
-// ipapi.coで現在地取得 → 失敗時は全国表示
+// ip-api.comで現在地取得 → 失敗時は全国表示
 (async () => {
   let bounds = [[24,122],[46,146]];
   try {
     const res = await Promise.race([
-      fetch("https://ipapi.co/json/"),
+      fetch("https://ip-api.com/json/?fields=status,lat,lon"),
       new Promise((_,reject) => setTimeout(() => reject(), 4000))
     ]);
     const d = await res.json();
-    if (d && d.latitude && d.longitude) {
-      const lat = parseFloat(d.latitude);
-      const lng = parseFloat(d.longitude);
+    if (d && d.status === "success" && d.lat && d.lon) {
+      const lat = parseFloat(d.lat);
+      const lng = parseFloat(d.lon);
       if (lat >= 24 && lat <= 46 && lng >= 122 && lng <= 146) {
         bounds = [[lat-TWO_HOUR_DEG, lng-TWO_HOUR_DEG*1.4],[lat+TWO_HOUR_DEG, lng+TWO_HOUR_DEG*1.4]];
       }
