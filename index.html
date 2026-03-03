@@ -194,7 +194,7 @@ const facilities = [
   { id:10, name:"安曇野市おためし住宅", area:"chubu", type:"trial", emoji:"🏔️", location:"長野県安曇野市", tags:["お試し移住","北アルプス","無料"], price:"無料", lat:36.303, lng:137.903, url:"https://www.city.azumino.nagano.jp/" },
   { id:11, name:"信濃町お試し住宅", area:"chubu", type:"trial", emoji:"🌲", location:"長野県信濃町", tags:["お試し移住","6泊無料","自治体運営"], price:"6泊無料〜", lat:36.847, lng:138.198, url:"https://www.town.shinano.lg.jp/" },
   { id:12, name:"駒ヶ根市移住体験住宅", area:"chubu", type:"trial", emoji:"🏔️", location:"長野県駒ヶ根市", tags:["お試し移住","アルプス","自治体運営"], price:"要問合せ", lat:35.726, lng:137.926, url:"https://www.city.komagane.nagano.jp/" },
-  { id:13, name:"北杜市お試し住宅", area:"chubu", type:"trial", emoji:"🌸", location:"山梨県北杜市", tags:["お試し移住","子育て支援","八ヶ岳"], price:"要問合せ", lat:35.775, lng:138.422, url:"https://www.city.hokuto.yamanashi.jp/" },
+  { id:13, name:"北杜市お試し住宅", area:"chubu", type:"trial", emoji:"🌸", location:"山梨県北杜市", tags:["お試し移住","子育て支援","八ヶ岳"], price:"要問合せ", lat:35.775, lng:138.422, url:"https://www.city.hokuto.yamanashi.jp/docs/1459818737-88.html" },
   { id:14, name:"富士河口湖町お試し移住", area:"chubu", type:"trial", emoji:"🗻", location:"山梨県富士河口湖町", tags:["お試し移住","富士山","自治体運営"], price:"要問合せ", lat:35.502, lng:138.752, url:"https://www.town.fujikawaguchiko.lg.jp/" },
   { id:15, name:"韮崎市お試し住宅", area:"chubu", type:"trial", emoji:"🌾", location:"山梨県韮崎市", tags:["お試し移住","富士山・八ヶ岳","自治体運営"], price:"要問合せ", lat:35.707, lng:138.449, url:"https://www.city.nirasaki.lg.jp/" },
   { id:16, name:"十日町市移住体験プログラム", area:"chubu", type:"trial", emoji:"❄️", location:"新潟県十日町市", tags:["お試し移住","雪国","アート"], price:"¥3,000〜", lat:37.132, lng:138.758, url:"https://homehome.jp/migration/" },
@@ -318,37 +318,31 @@ const TWO_HOUR_DEG = 0.5; // 約55km分
 
 // IPジオロケーションで現在地を取得し、2時間圏内を初期表示
 // 取得できなければ全国表示にフォールバック
-async function getInitialBounds() {
-  const apis = [
-    () => fetch("https://ip-api.com/json/?fields=lat,lon,status").then(r=>r.json()).then(d=> d.status==="success" ? {latitude:d.lat,longitude:d.lon} : null),
-    () => fetch("https://ipapi.co/json/").then(r=>r.json()).then(d=> d.latitude ? {latitude:d.latitude,longitude:d.longitude} : null),
-    () => fetch("https://ipwho.is/").then(r=>r.json()).then(d=> d.success ? {latitude:d.latitude,longitude:d.longitude} : null),
-  ];
-  for (const api of apis) {
-    try {
-      const data = await Promise.race([api(), new Promise((_,reject)=>setTimeout(()=>reject(),3000))]);
-      if (data) {
-        const lat = parseFloat(data.latitude);
-        const lng = parseFloat(data.longitude);
-        if (lat >= 24 && lat <= 46 && lng >= 122 && lng <= 146) {
-          return [[lat-TWO_HOUR_DEG, lng-TWO_HOUR_DEG*1.4],[lat+TWO_HOUR_DEG, lng+TWO_HOUR_DEG*1.4]];
-        }
-      }
-    } catch(e) {}
-  }
-  return areaBounds.all;
-}
-
 const map = L.map('map', {zoomControl:true});
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution:'© OpenStreetMap contributors', maxZoom:18
 }).addTo(map);
 
-// 初期表示：IPジオロケーションで現在地から2時間圏内に設定
-getInitialBounds().then(bounds => {
+// ipapi.coで現在地取得 → 失敗時は全国表示
+(async () => {
+  let bounds = [[24,122],[46,146]];
+  try {
+    const res = await Promise.race([
+      fetch("https://ipapi.co/json/"),
+      new Promise((_,reject) => setTimeout(() => reject(), 4000))
+    ]);
+    const d = await res.json();
+    if (d && d.latitude && d.longitude) {
+      const lat = parseFloat(d.latitude);
+      const lng = parseFloat(d.longitude);
+      if (lat >= 24 && lat <= 46 && lng >= 122 && lng <= 146) {
+        bounds = [[lat-TWO_HOUR_DEG, lng-TWO_HOUR_DEG*1.4],[lat+TWO_HOUR_DEG, lng+TWO_HOUR_DEG*1.4]];
+      }
+    }
+  } catch(e) {}
   map.fitBounds(bounds, { animate: false });
   render();
-});
+})();
 
 function createIcon(f) {
   const c = typeColors[f.type];
