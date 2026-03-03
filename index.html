@@ -319,22 +319,22 @@ const TWO_HOUR_DEG = 0.5; // 約55km分
 // IPジオロケーションで現在地を取得し、2時間圏内を初期表示
 // 取得できなければ全国表示にフォールバック
 async function getInitialBounds() {
-  try {
-    const res = await fetch("https://ipapi.co/json/");
-    const data = await res.json();
-    if (data && data.latitude && data.longitude) {
-      const lat = parseFloat(data.latitude);
-      const lng = parseFloat(data.longitude);
-      // 日本国内かチェック（念のため）
-      if (lat >= 24 && lat <= 46 && lng >= 122 && lng <= 146) {
-        return [
-          [lat - TWO_HOUR_DEG, lng - TWO_HOUR_DEG * 1.4],
-          [lat + TWO_HOUR_DEG, lng + TWO_HOUR_DEG * 1.4]
-        ];
+  const apis = [
+    () => fetch("https://ip-api.com/json/?fields=lat,lon,status").then(r=>r.json()).then(d=> d.status==="success" ? {latitude:d.lat,longitude:d.lon} : null),
+    () => fetch("https://ipapi.co/json/").then(r=>r.json()).then(d=> d.latitude ? {latitude:d.latitude,longitude:d.longitude} : null),
+    () => fetch("https://ipwho.is/").then(r=>r.json()).then(d=> d.success ? {latitude:d.latitude,longitude:d.longitude} : null),
+  ];
+  for (const api of apis) {
+    try {
+      const data = await Promise.race([api(), new Promise((_,reject)=>setTimeout(()=>reject(),3000))]);
+      if (data) {
+        const lat = parseFloat(data.latitude);
+        const lng = parseFloat(data.longitude);
+        if (lat >= 24 && lat <= 46 && lng >= 122 && lng <= 146) {
+          return [[lat-TWO_HOUR_DEG, lng-TWO_HOUR_DEG*1.4],[lat+TWO_HOUR_DEG, lng+TWO_HOUR_DEG*1.4]];
+        }
       }
-    }
-  } catch(e) {
-    // 取得失敗時は全国表示
+    } catch(e) {}
   }
   return areaBounds.all;
 }
