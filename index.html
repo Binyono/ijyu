@@ -127,6 +127,52 @@ transition: max-height 0.3s ease;
 @media (min-width:641px) {
   .up-btn { display:none !important; }
 }
+.heatmap-control {
+  position: absolute;
+  right: 12px;
+  bottom: 32px;
+  z-index: 1000;
+  background: rgba(255,255,255,0.95);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  padding: 10px 12px;
+  min-width: 140px;
+  font-family: 'Noto Sans JP', sans-serif;
+}
+.heatmap-toggle {
+  display: flex; align-items: center; gap-6px;
+  width: 100%; border: none; background: none;
+  font-family: inherit; font-size: 12px; font-weight: 700;
+  color: #555; cursor: pointer; padding: 0 0 8px 0;
+  border-bottom: 1px solid #eee; margin-bottom: 8px;
+  justify-content: space-between;
+}
+.heatmap-toggle.on { color: #3a6b4a; }
+.heatmap-toggle-dot {
+  width: 32px; height: 18px; border-radius: 9px;
+  background: #ddd; position: relative; transition: background 0.2s;
+  flex-shrink: 0;
+}
+.heatmap-toggle-dot.on { background: #3a6b4a; }
+.heatmap-toggle-dot::after {
+  content: ''; position: absolute; width: 14px; height: 14px;
+  border-radius: 50%; background: white; top: 2px; left: 2px;
+  transition: left 0.2s;
+}
+.heatmap-toggle-dot.on::after { left: 16px; }
+.heatmap-legend { display: none; }
+.heatmap-legend.visible { display: block; }
+.legend-bar {
+  height: 10px; border-radius: 5px; margin-bottom: 4px;
+  background: linear-gradient(to right, rgba(220,100,50,0.5), rgba(150,170,60,0.5), rgba(90,200,80,0.5));
+}
+.legend-labels {
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: #888;
+}
+.legend-title { font-size: 10px; color: #888; margin-bottom: 4px; }
+.legend-gray { display:flex; align-items:center; gap:4px; margin-top:6px; font-size:10px; color:#aaa; }
+.legend-gray-box { width:12px; height:10px; border-radius:2px; background:rgba(180,180,180,0.3); flex-shrink:0; }
 .pref-tooltip {
   background:rgba(255,255,255,0.92); border:1px solid #ccc;
   border-radius:6px; font-size:12px; padding:4px 8px;
@@ -151,8 +197,7 @@ transition: max-height 0.3s ease;
   <button class="chip" data-type="dual">二拠点施設</button>
   <button class="chip" data-type="share">シェアハウス</button>
   <div style="width:1px;background:#e8e4dc;margin:0 4px;flex-shrink:0"></div>
-  <button class="chip" id="heatmap-btn" onclick="toggleHeatmap()">定住率マップ</button>
-  <div style="width:1px;background:#e8e4dc;margin:0 4px;flex-shrink:0"></div>
+
   <button class="chip active-orange" data-area="all">全国</button>
   <button class="chip" data-area="hokkaido">北海道</button>
   <button class="chip" data-area="tohoku">東北</button>
@@ -166,6 +211,18 @@ transition: max-height 0.3s ease;
 
 <div class="main">
   <div id="map"></div>
+  <div class="heatmap-control" id="heatmap-control">
+    <button class="heatmap-toggle" id="heatmap-btn" onclick="toggleHeatmap()">
+      <span>定住率マップ</span>
+      <div class="heatmap-toggle-dot" id="heatmap-dot"></div>
+    </button>
+    <div class="heatmap-legend" id="heatmap-legend">
+      <div class="legend-title">地域おこし協力隊 定住率</div>
+      <div class="legend-bar"></div>
+      <div class="legend-labels"><span>低 55%</span><span>高 78%</span></div>
+      <div class="legend-gray"><div class="legend-gray-box"></div>データ少（50人未満）</div>
+    </div>
+  </div>
 
   <div class="panel">
     <div class="panel-count"><strong id="count">0</strong> 件表示中</div>
@@ -386,11 +443,17 @@ function getTeijuColor(rate) {
 function toggleHeatmap() {
   heatmapVisible = !heatmapVisible;
   const btn = document.getElementById('heatmap-btn');
+  const dot = document.getElementById('heatmap-dot');
+  const legend = document.getElementById('heatmap-legend');
   if (heatmapVisible) {
-    btn.classList.add('active-orange');
+    btn.classList.add('on');
+    dot.classList.add('on');
+    legend.classList.add('visible');
     loadHeatmap();
   } else {
-    btn.classList.remove('active-orange');
+    btn.classList.remove('on');
+    dot.classList.remove('on');
+    legend.classList.remove('visible');
     if (prefLayer) { map.removeLayer(prefLayer); prefLayer = null; }
   }
 }
