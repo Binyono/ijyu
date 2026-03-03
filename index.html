@@ -127,6 +127,11 @@ transition: max-height 0.3s ease;
 @media (min-width:641px) {
   .up-btn { display:none !important; }
 }
+.pref-tooltip {
+  background:rgba(255,255,255,0.92); border:1px solid #ccc;
+  border-radius:6px; font-size:12px; padding:4px 8px;
+  font-family:'Noto Sans JP',sans-serif;
+}
 </style>
 
 </head>
@@ -145,6 +150,8 @@ transition: max-height 0.3s ease;
   <button class="chip" data-type="trial">お試し移住</button>
   <button class="chip" data-type="dual">二拠点施設</button>
   <button class="chip" data-type="share">シェアハウス</button>
+  <div style="width:1px;background:#e8e4dc;margin:0 4px;flex-shrink:0"></div>
+  <button class="chip" id="heatmap-btn" onclick="toggleHeatmap()">定住率マップ</button>
   <div style="width:1px;background:#e8e4dc;margin:0 4px;flex-shrink:0"></div>
   <button class="chip active-orange" data-area="all">全国</button>
   <button class="chip" data-area="hokkaido">北海道</button>
@@ -343,6 +350,78 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   map.fitBounds(bounds, { animate: false });
   render();
 })();
+
+
+// ── 定住率レイヤー ──
+const teijuRate = {
+  '北海道':76.8,'青森県':71.7,'岩手県':62.9,'宮城県':67.0,'秋田県':55.0,
+  '山形県':66.7,'福島県':65.5,'茨城県':61.5,'栃木県':75.0,'群馬県':65.1,
+  '埼玉県':null,'千葉県':null,'東京都':null,'神奈川県':null,
+  '新潟県':63.6,'富山県':null,'石川県':null,'福井県':null,
+  '山梨県':75.9,'長野県':77.1,'岐阜県':null,'静岡県':76.2,'愛知県':null,
+  '三重県':65.0,'滋賀県':null,'京都府':null,'大阪府':null,'兵庫県':72.8,
+  '奈良県':72.3,'和歌山県':null,'鳥取県':64.7,'島根県':64.2,'岡山県':62.7,
+  '広島県':75.0,'山口県':73.0,'徳島県':null,'香川県':null,'愛媛県':66.7,
+  '高知県':73.7,'福岡県':66.7,'佐賀県':null,'長崎県':60.0,'熊本県':66.7,
+  '大分県':73.0,'宮崎県':59.8,'鹿児島県':68.9,'沖縄県':57.8
+};
+// 50人以上の県のみ有効（nullは母数不足）
+// 実際の50人以上チェック済み（PDFデータより）
+
+let prefLayer = null;
+let heatmapVisible = false;
+
+function getTeijuColor(rate) {
+  if (rate === null) return 'rgba(180,180,180,0.15)';
+  // 55%〜78% をグラデーション
+  // 低い=オレンジ系、高い=緑系
+  const min = 55, max = 78;
+  const t = Math.max(0, Math.min(1, (rate - min) / (max - min)));
+  const r = Math.round(220 - t * 130);
+  const g = Math.round(100 + t * 100);
+  const b = Math.round(50 + t * 30);
+  return `rgba(${r},${g},${b},0.35)`;
+}
+
+function toggleHeatmap() {
+  heatmapVisible = !heatmapVisible;
+  const btn = document.getElementById('heatmap-btn');
+  if (heatmapVisible) {
+    btn.classList.add('active-orange');
+    loadHeatmap();
+  } else {
+    btn.classList.remove('active-orange');
+    if (prefLayer) { map.removeLayer(prefLayer); prefLayer = null; }
+  }
+}
+
+function loadHeatmap() {
+  fetch('https://raw.githubusercontent.com/dataofjapan/land/master/japan.geojson')
+    .then(r => r.json())
+    .then(data => {
+      if (prefLayer) map.removeLayer(prefLayer);
+      prefLayer = L.geoJSON(data, {
+        style: f => {
+          const name = f.properties.nam_ja;
+          const rate = teijuRate[name] !== undefined ? teijuRate[name] : null;
+          return {
+            fillColor: getTeijuColor(rate),
+            fillOpacity: 1,
+            color: rate !== null ? 'rgba(100,130,100,0.4)' : 'rgba(150,150,150,0.2)',
+            weight: 0.8
+          };
+        },
+        onEachFeature: (f, layer) => {
+          const name = f.properties.nam_ja;
+          const rate = teijuRate[name];
+          if (rate !== null && rate !== undefined) {
+            layer.bindTooltip(`${name}<br>定住率 ${rate}%`, {sticky:true, className:'pref-tooltip'});
+          }
+        }
+      }).addTo(map);
+      prefLayer.bringToBack();
+    });
+}
 
 function createIcon(f) {
   const c = typeColors[f.type];
