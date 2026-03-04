@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -10,36 +9,49 @@
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:'Noto Sans JP',sans-serif; background:#f4f1eb; height:100dvh; display:flex; flex-direction:column; overflow:hidden; }
-
-header {
-background:#fff; border-bottom:1px solid #e0dbd2;
-display:flex; align-items:center; gap:12px;
-padding:0 16px; height:52px; flex-shrink:0;
-box-shadow:0 1px 6px rgba(0,0,0,0.06); z-index:1000;
-}
+header { background:#fff; border-bottom:1px solid #e0dbd2; display:flex; align-items:center; gap:12px; padding:0 16px; height:52px; flex-shrink:0; box-shadow:0 1px 6px rgba(0,0,0,0.06); z-index:1000; }
 .logo { font-size:18px; font-weight:700; color:#3a6b4a; letter-spacing:1px; white-space:nowrap; }
 .logo span { color:#e07b39; }
 .search-bar { flex:1; background:#f4f1eb; border-radius:8px; display:flex; align-items:center; padding:7px 12px; gap:6px; }
 .search-bar input { border:none; background:transparent; font-family:inherit; font-size:13px; outline:none; width:100%; color:#333; }
-
-.filter-bar {
-background:#fff; border-bottom:1px solid #e8e4dc;
-padding:10px 12px; display:flex; gap:6px; overflow-x:auto; flex-shrink:0; z-index:999;
-}
+.filter-bar { background:#fff; border-bottom:1px solid #e8e4dc; padding:10px 12px; display:flex; gap:6px; overflow-x:auto; flex-shrink:0; z-index:999; }
 .filter-bar::-webkit-scrollbar { display:none; }
 .chip { padding:6px 14px; border-radius:50px; font-size:12px; white-space:nowrap; border:1.5px solid #ddd; background:white; color:#666; cursor:pointer; font-family:inherit; flex-shrink:0; transition:all 0.15s; }
 .chip.active-green { border-color:#3a6b4a; background:#3a6b4a; color:white; font-weight:700; }
 .chip.active-orange { border-color:#e07b39; background:#e07b39; color:white; font-weight:700; }
-
 .main { display:flex; flex:1; overflow:hidden; position:relative; }
 #map { flex:1; z-index:1; }
+
+/* 定住率コントロール：ズームボタン下・左上 */
+.heatmap-control {
+  position: absolute; left: 10px; top: 90px; z-index: 1000;
+  background: rgba(255,255,255,0.95); border-radius: 4px;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.25);
+  width: 34px; overflow: hidden; transition: width 0.25s ease;
+  font-family: 'Noto Sans JP', sans-serif;
+}
+.heatmap-control.expanded { width: 160px; }
+.heatmap-toggle {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border: none; background: none;
+  font-size: 15px; cursor: pointer; padding: 0; color: #555;
+}
+.heatmap-toggle.on { background: #f0f7f2; color: #3a6b4a; }
+.heatmap-legend { display: none; padding: 0 10px 10px; white-space: nowrap; }
+.heatmap-legend.visible { display: block; }
+.legend-title { font-size: 10px; font-weight:700; color: #3a6b4a; margin-bottom: 2px; }
+.legend-sub { font-size: 9px; color: #aaa; margin-bottom: 6px; }
+.legend-bar { height: 8px; border-radius: 4px; margin-bottom: 3px; background: linear-gradient(to right, rgba(220,100,50,0.6), rgba(150,170,60,0.6), rgba(90,200,80,0.6)); }
+.legend-labels { display: flex; justify-content: space-between; font-size: 9px; color: #999; }
+.legend-gray { display:flex; align-items:center; gap:4px; margin-top:6px; font-size:9px; color:#bbb; }
+.legend-gray-box { width:10px; height:8px; border-radius:2px; background:rgba(180,180,180,0.35); flex-shrink:0; }
+.pref-tooltip { background:rgba(255,255,255,0.92); border:1px solid #ccc; border-radius:6px; font-size:12px; padding:4px 8px; font-family:'Noto Sans JP',sans-serif; }
 
 /* PC サイドパネル */
 .panel { width:280px; background:#fff; border-left:1px solid #e0dbd2; display:flex; flex-direction:column; overflow:hidden; z-index:2; }
 .panel-count { padding:12px 14px 8px; font-size:12px; color:#888; border-bottom:1px solid #f0ede6; flex-shrink:0; }
 .panel-count strong { color:#3a6b4a; font-size:16px; }
 .panel-list { flex:1; overflow-y:auto; }
-
 .pitem { display:flex; gap:10px; padding:12px 14px; border-bottom:1px solid #f4f1eb; cursor:pointer; transition:background 0.15s; }
 .pitem:hover, .pitem.active { background:#f0f7f2; }
 .pitem-emoji { width:48px; height:44px; border-radius:8px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:22px; }
@@ -49,46 +61,14 @@ padding:10px 12px; display:flex; gap:6px; overflow-x:auto; flex-shrink:0; z-inde
 .ptag { font-size:9px; padding:2px 6px; border-radius:3px; background:#f4f1eb; color:#777; }
 
 /* スマホ ボトムシート */
-.bottom-sheet {
-display:none;
-position:fixed; left:0; right:0; bottom:0; z-index:500;
-background:#fff; border-radius:16px 16px 0 0;
-box-shadow:0 -4px 20px rgba(0,0,0,0.12);
-flex-direction:column;
-max-height:55dvh;
-padding-bottom:env(safe-area-inset-bottom, 0px);
-transition: max-height 0.3s ease;
-}
+.bottom-sheet { display:none; position:fixed; left:0; right:0; bottom:0; z-index:500; background:#fff; border-radius:16px 16px 0 0; box-shadow:0 -4px 20px rgba(0,0,0,0.12); flex-direction:column; max-height:55dvh; padding-bottom:env(safe-area-inset-bottom, 0px); transition: max-height 0.3s ease; }
 .sheet-handle { display:flex; align-items:center; justify-content:space-between; padding:10px 16px 6px; flex-shrink:0; cursor:pointer; }
 .sheet-handle-bar { width:36px; height:4px; background:#ddd; border-radius:4px; }
 .sheet-count { font-size:12px; color:#888; }
 .sheet-count strong { color:#3a6b4a; font-size:15px; }
 .sheet-list { overflow-y:auto; flex:1; }
-
-/* スマホ ↑ボタン */
-.up-btn {
-  position:fixed;
-  right:16px;
-  bottom:24px;
-  z-index:9999;
-  width:52px; height:52px;
-  border-radius:50%;
-  background:white;
-  border:2px solid #ccc;
-  font-size:20px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow:0 2px 12px rgba(0,0,0,0.2);
-  cursor:pointer;
-  opacity:0;
-  pointer-events:none;
-  transition: opacity 0.2s;
-}
-.up-btn.visible {
-  opacity:1;
-  pointer-events:auto;
-}
+.up-btn { position:fixed; right:16px; bottom:24px; z-index:9999; width:52px; height:52px; border-radius:50%; background:white; border:2px solid #ccc; font-size:20px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 12px rgba(0,0,0,0.2); cursor:pointer; opacity:0; pointer-events:none; transition: opacity 0.2s; }
+.up-btn.visible { opacity:1; pointer-events:auto; }
 
 /* ポップアップ */
 .leaflet-popup-content-wrapper { border-radius:14px !important; box-shadow:0 8px 24px rgba(0,0,0,0.15) !important; padding:0 !important; overflow:hidden; }
@@ -100,86 +80,13 @@ transition: max-height 0.3s ease;
 .popup-tags { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:10px; }
 .popup-tag { font-size:10px; padding:2px 8px; border-radius:4px; background:#f4f1eb; color:#777; }
 .popup-price { font-size:13px; font-weight:700; margin-bottom:10px; }
+.popup-link { display:block; width:fit-content; margin:0 auto; padding:9px 24px; border-radius:8px; color:#fff !important; font-family:inherit; font-size:12px; cursor:pointer; font-weight:700; text-decoration:none !important; text-align:center; }
+.popup-link:visited, .popup-link:hover, .popup-link:active { color:#fff !important; text-decoration:none !important; }
+.popup-nolink { display:block; width:fit-content; margin:0 auto; padding:9px 24px; border-radius:8px; color:#fff !important; font-family:inherit; font-size:12px; font-weight:500; text-align:center; opacity:0.4; }
 
-.popup-link {
-  display:block; width:fit-content; margin:0 auto;
-  padding:9px 24px; border-radius:8px;
-  color:#fff !important;
-  font-family:inherit; font-size:12px; cursor:pointer;
-  font-weight:700; text-decoration:none !important;
-  text-align:center;
-}
-.popup-link:visited, .popup-link:hover, .popup-link:active {
-  color:#fff !important;
-  text-decoration:none !important;
-}
-.popup-nolink {
-  display:block; width:fit-content; margin:0 auto;
-  padding:9px 24px; border-radius:8px;
-  color:#fff !important; font-family:inherit;
-  font-size:12px; font-weight:500; text-align:center; opacity:0.4;
-}
-
-@media (max-width:640px) {
-  .panel { display:none; }
-  .bottom-sheet { display:flex; }
-}
-@media (min-width:641px) {
-  .up-btn { display:none !important; }
-}
-.heatmap-control {
-  position: absolute;
-  right: 12px;
-  bottom: 32px;
-  z-index: 1000;
-  background: rgba(255,255,255,0.95);
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
-  padding: 10px 12px;
-  min-width: 140px;
-  font-family: 'Noto Sans JP', sans-serif;
-}
-.heatmap-toggle {
-  display: flex; align-items: center; gap-6px;
-  width: 100%; border: none; background: none;
-  font-family: inherit; font-size: 12px; font-weight: 700;
-  color: #555; cursor: pointer; padding: 0 0 8px 0;
-  border-bottom: 1px solid #eee; margin-bottom: 8px;
-  justify-content: space-between;
-}
-.heatmap-toggle.on { color: #3a6b4a; }
-.heatmap-toggle-dot {
-  width: 32px; height: 18px; border-radius: 9px;
-  background: #ddd; position: relative; transition: background 0.2s;
-  flex-shrink: 0;
-}
-.heatmap-toggle-dot.on { background: #3a6b4a; }
-.heatmap-toggle-dot::after {
-  content: ''; position: absolute; width: 14px; height: 14px;
-  border-radius: 50%; background: white; top: 2px; left: 2px;
-  transition: left 0.2s;
-}
-.heatmap-toggle-dot.on::after { left: 16px; }
-.heatmap-legend { display: none; }
-.heatmap-legend.visible { display: block; }
-.legend-bar {
-  height: 10px; border-radius: 5px; margin-bottom: 4px;
-  background: linear-gradient(to right, rgba(220,100,50,0.5), rgba(150,170,60,0.5), rgba(90,200,80,0.5));
-}
-.legend-labels {
-  display: flex; justify-content: space-between;
-  font-size: 10px; color: #888;
-}
-.legend-title { font-size: 10px; color: #888; margin-bottom: 4px; }
-.legend-gray { display:flex; align-items:center; gap:4px; margin-top:6px; font-size:10px; color:#aaa; }
-.legend-gray-box { width:12px; height:10px; border-radius:2px; background:rgba(180,180,180,0.3); flex-shrink:0; }
-.pref-tooltip {
-  background:rgba(255,255,255,0.92); border:1px solid #ccc;
-  border-radius:6px; font-size:12px; padding:4px 8px;
-  font-family:'Noto Sans JP',sans-serif;
-}
+@media (max-width:640px) { .panel { display:none; } .bottom-sheet { display:flex; } }
+@media (min-width:641px) { .up-btn { display:none !important; } }
 </style>
-
 </head>
 <body>
 
@@ -197,7 +104,6 @@ transition: max-height 0.3s ease;
   <button class="chip" data-type="dual">二拠点施設</button>
   <button class="chip" data-type="share">シェアハウス</button>
   <div style="width:1px;background:#e8e4dc;margin:0 4px;flex-shrink:0"></div>
-
   <button class="chip active-orange" data-area="all">全国</button>
   <button class="chip" data-area="hokkaido">北海道</button>
   <button class="chip" data-area="tohoku">東北</button>
@@ -211,13 +117,12 @@ transition: max-height 0.3s ease;
 
 <div class="main">
   <div id="map"></div>
+
   <div class="heatmap-control" id="heatmap-control">
-    <button class="heatmap-toggle" id="heatmap-btn" onclick="toggleHeatmap()">
-      <span>定住率マップ</span>
-      <div class="heatmap-toggle-dot" id="heatmap-dot"></div>
-    </button>
+    <button class="heatmap-toggle" id="heatmap-btn" onclick="toggleHeatmap()" title="定住率マップ">🗺</button>
     <div class="heatmap-legend" id="heatmap-legend">
-      <div class="legend-title">地域おこし協力隊 定住率</div>
+      <div class="legend-title">定住率マップ</div>
+      <div class="legend-sub">地域おこし協力隊（令和5年度）</div>
       <div class="legend-bar"></div>
       <div class="legend-labels"><span>低 55%</span><span>高 78%</span></div>
       <div class="legend-gray"><div class="legend-gray-box"></div>データ少（50人未満）</div>
@@ -241,10 +146,8 @@ transition: max-height 0.3s ease;
 <button class="up-btn" id="up-btn">↑</button>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-
 <script>
 const facilities = [
-  // ── 関東 ──
   { id:1,  name:"秩父杉の家「絆」", area:"kanto", type:"trial", emoji:"🏠", location:"埼玉県秩父市", tags:["お試し移住","無料","移住相談"], price:"無料（飲食費は自己負担）", lat:35.991, lng:139.079, url:"https://www.chichibu-iju.com/otameshi.html" },
   { id:2,  name:"ゆーゆーキャビン", area:"kanto", type:"trial", emoji:"🏕️", location:"栃木県大田原市", tags:["お試し移住","温泉付き","自治体運営"], price:"¥2,000〜/日", lat:36.823, lng:140.173, url:"https://ohtawara-ijyu.jp/" },
   { id:3,  name:"ホタルの家", area:"kanto", type:"trial", emoji:"🏡", location:"神奈川県山北町", tags:["お試し移住","古民家","2週間〜"], price:"¥20,000〜/2週間", lat:35.366, lng:139.079, url:"https://www.town.yamakita.kanagawa.jp/" },
@@ -252,7 +155,10 @@ const facilities = [
   { id:5,  name:"いすみ市お試し居住", area:"kanto", type:"trial", emoji:"🌊", location:"千葉県いすみ市", tags:["お試し移住","自治体運営","最大1週間"], price:"無料", lat:35.254, lng:140.369, url:"https://www.city.isumi.lg.jp/" },
   { id:6,  name:"くらしかる真鶴", area:"kanto", type:"trial", emoji:"🐟", location:"神奈川県真鶴町", tags:["お試し移住","海が見える","1週間〜"], price:"要問合せ", lat:35.156, lng:139.132, url:"https://manazuru-iju.jp/" },
   { id:7,  name:"ぬまた暮らし体験住宅", area:"kanto", type:"trial", emoji:"🌲", location:"群馬県沼田市", tags:["お試し移住","薪ストーブ","山・自然"], price:"要問合せ", lat:36.646, lng:139.043, url:"https://www.city.numata.gunma.jp/" },
-  // ── 中部・甲信越 ──
+  { id:48, name:"常陸太田市 トライアルハウス", area:"kanto", type:"trial", emoji:"🏯", location:"茨城県常陸太田市", tags:["お試し移住","2施設","竜神大吊橋"], price:"要問合せ", lat:36.531, lng:140.528, url:"https://iju-ibaraki.jp/residence/stay/" },
+  { id:49, name:"鹿沼市お試し住宅", area:"kanto", type:"trial", emoji:"🌲", location:"栃木県鹿沼市", tags:["お試し移住","家賃無料〜","自治体運営"], price:"無料〜", lat:36.561, lng:139.735, url:"https://www.tochigi-iju.jp/house/trial/" },
+  { id:50, name:"沼田市 ぬまた暮らし体験住宅", area:"kanto", type:"trial", emoji:"🏔️", location:"群馬県沼田市", tags:["お試し移住","薪ストーブ","谷川岳近く"], price:"要問合せ", lat:36.648, lng:139.036, url:"https://smout.jp/features/31/plans" },
+  { id:51, name:"多古町お試し移住", area:"kanto", type:"trial", emoji:"🌾", location:"千葉県多古町", tags:["お試し移住","農業体験","観光では見えない暮らし"], price:"要問合せ", lat:35.731, lng:140.494, url:"https://www.town.tako.chiba.jp/" },
   { id:8,  name:"川根本町お試し住宅", area:"chubu", type:"trial", emoji:"🍵", location:"静岡県川根本町", tags:["お試し移住","川根茶","無料"], price:"無料", lat:35.118, lng:138.087, url:"https://www.town.kawanehon.shizuoka.jp/" },
   { id:9,  name:"西伊豆町お試し移住住宅", area:"chubu", type:"trial", emoji:"🌅", location:"静岡県西伊豆町", tags:["お試し移住","夕日百選","自治体運営"], price:"¥1,000/日", lat:34.769, lng:138.777, url:"https://iju.pref.shizuoka.jp/measure/503.html" },
   { id:10, name:"安曇野市おためし住宅", area:"chubu", type:"trial", emoji:"🏔️", location:"長野県安曇野市", tags:["お試し移住","北アルプス","無料"], price:"無料", lat:36.303, lng:137.903, url:"https://www.city.azumino.nagano.jp/" },
@@ -263,7 +169,6 @@ const facilities = [
   { id:15, name:"韮崎市お試し住宅", area:"chubu", type:"trial", emoji:"🌾", location:"山梨県韮崎市", tags:["お試し移住","富士山・八ヶ岳","自治体運営"], price:"要問合せ", lat:35.707, lng:138.449, url:"https://www.city.nirasaki.lg.jp/" },
   { id:16, name:"十日町市移住体験プログラム", area:"chubu", type:"trial", emoji:"❄️", location:"新潟県十日町市", tags:["お試し移住","雪国","アート"], price:"¥3,000〜", lat:37.132, lng:138.758, url:"https://homehome.jp/migration/" },
   { id:17, name:"能美市お試し住宅", area:"chubu", type:"trial", emoji:"🏮", location:"石川県能美市", tags:["お試し移住","駅近","自治体運営"], price:"要問合せ", lat:36.432, lng:136.487, url:"https://www.city.nomi.ishikawa.jp/" },
-  // ── 東北 ──
   { id:18, name:"北秋田市移住定住ネットワークセンター", area:"tohoku", type:"trial", emoji:"🐻", location:"秋田県北秋田市", tags:["お試し移住","秋田杉","自治体運営"], price:"¥400〜/泊", lat:39.676, lng:140.393, url:"https://www.city.kitaakita.akita.jp/archive/p12913" },
   { id:19, name:"白河市お試し住宅", area:"tohoku", type:"trial", emoji:"🌾", location:"福島県白河市", tags:["お試し移住","4施設あり","¥7,000/週"], price:"¥7,000〜/週", lat:37.131, lng:140.213, url:"https://www.city.shirakawa.fukushima.jp/page/page008274.html" },
   { id:20, name:"ふくしま体験住宅提供事業", area:"tohoku", type:"trial", emoji:"🏯", location:"福島県各市町村", tags:["お試し移住","県営住宅","最長1年"], price:"低廉な家賃", lat:37.484, lng:140.330, url:"https://www.pref.fukushima.lg.jp/sec/41065a/kitefukushima.html" },
@@ -273,34 +178,45 @@ const facilities = [
   { id:24, name:"遊佐町お試し体験住宅", area:"tohoku", type:"trial", emoji:"🌾", location:"山形県遊佐町", tags:["お試し移住","鳥海山","駅近"], price:"要問合せ", lat:39.013, lng:140.054, url:"https://yamagata-iju.jp/kurashi/exphouse/" },
   { id:26, name:"十和田市移住お試し住宅", area:"tohoku", type:"trial", emoji:"🦌", location:"青森県十和田市", tags:["お試し移住","無料","十和田湖近く"], price:"無料", lat:40.614, lng:141.207, url:"https://www.city.towada.lg.jp/kurashi/ijuu/ijuu/otameshi.html" },
   { id:27, name:"弘前圏域 移住お試しハウス", area:"tohoku", type:"trial", emoji:"🍎", location:"青森県弘前市", tags:["お試し移住","りんご","弘前城"], price:"要問合せ", lat:40.602, lng:140.464, url:"https://www.hirosakigurashi.jp/executive-service/trial-house/" },
-  // ── 近畿 ──
-  { id:22, name:"紲ya -ツナギヤ-", area:"kinki", type:"trial", emoji:"🏘️", location:"滋賀県米原市", tags:["お試し移住","一棟貸切","移住相談"], price:"¥8,800〜/泊", lat:35.319, lng:136.447, url:"https://tsunagiya-knw.jp/" },
-  { id:23, name:"丹波市佐治暮らし体験住宅「竹岡邸」", area:"kinki", type:"trial", emoji:"🍂", location:"兵庫県丹波市", tags:["お試し移住","古民家","補助金あり"], price:"要問合せ", lat:35.176, lng:135.034, url:"https://www.city.tanba.lg.jp/" },
-  { id:24, name:"加西市お試し滞在施設", area:"kinki", type:"trial", emoji:"🌾", location:"兵庫県加西市", tags:["お試し移住","2施設あり","補助制度あり"], price:"要問合せ", lat:34.944, lng:134.842, url:"https://www.city.kasai.hyogo.jp/" },
-  { id:26, name:"淡路市SAKURA HOUSE", area:"kinki", type:"share", emoji:"🌸", location:"兵庫県淡路市", tags:["シェアハウス","女性専用","海が見える"], price:"要問合せ", lat:34.424, lng:134.896, url:"https://www.city.awaji.lg.jp/" },
-  // ── 四国 ──
-  { id:27, name:"西条市移住体験ツアー", area:"shikoku", type:"trial", emoji:"🏔️", location:"愛媛県西条市", tags:["お試し移住","無料","オーダーメイド"], price:"無料", lat:33.920, lng:133.181, url:"https://www.lovesaijo.com/" },
-  // ── 九州・沖縄 ──
-  { id:29, name:"新上五島町お試し住宅", area:"kyushu", type:"trial", emoji:"🏝️", location:"長崎県新上五島町", tags:["お試し移住","14日間無料","島暮らし"], price:"無料（14日間）", lat:32.987, lng:129.079, url:"https://shinkamigoto.nagasaki.jp/" },
-  { id:30, name:"南大隅町お試し住宅", area:"kyushu", type:"trial", emoji:"🌺", location:"鹿児島県南大隅町", tags:["お試し移住","¥1,000/泊","最南端"], price:"¥1,000/泊", lat:31.008, lng:130.672, url:"https://www.town.minamiosumi.lg.jp/" },
-  // ── 中国 ──
+  { id:52, name:"岩手県 いわてお試し居住体験", area:"tohoku", type:"trial", emoji:"🏔️", location:"岩手県各市町村", tags:["お試し移住","月1万円","県営住宅"], price:"¥10,000/月", lat:39.703, lng:141.153, url:"https://www.pref.iwate.jp/kurashikankyou/kenchiku/kenei/1065217.html" },
+  { id:53, name:"盛岡市お試し移住体験", area:"tohoku", type:"trial", emoji:"🏙️", location:"岩手県盛岡市", tags:["お試し移住","まちなか","コンパクトシティ"], price:"要問合せ", lat:39.703, lng:141.153, url:"https://www.city.morioka.iwate.jp/kurashi/1027362/1028074/1046679.html" },
+  { id:54, name:"青森市 まちなか移住体験施設", area:"tohoku", type:"trial", emoji:"🍎", location:"青森県青森市", tags:["お試し移住","古民家石木邸","5市町村連携"], price:"無料", lat:40.824, lng:140.740, url:"https://www.city.aomori.aomori.jp/renkeisuisin/kurashi-guide/sumai/iju-teiju/otamesiijyu.html" },
+  { id:55, name:"青森県南部町お試し住宅", area:"tohoku", type:"trial", emoji:"🌾", location:"青森県三戸郡南部町", tags:["お試し移住","無料","PC3台貸出"], price:"無料", lat:40.454, lng:141.314, url:"https://turns.jp/97128" },
+  { id:56, name:"山形県河北町お試し住宅", area:"tohoku", type:"trial", emoji:"🍒", location:"山形県西村山郡河北町", tags:["お試し移住","5DK","就農体験"], price:"要問合せ", lat:38.467, lng:140.373, url:"https://turns.jp/97128" },
+  { id:57, name:"山形県酒田市 お試し移住", area:"tohoku", type:"trial", emoji:"🌊", location:"山形県酒田市", tags:["お試し移住","市街地・郊外選択","日本海"], price:"要問合せ", lat:38.914, lng:139.836, url:"https://yamagata-iju.jp/kurashi/exphouse/" },
+  { id:101, name:"紲ya -ツナギヤ-", area:"kinki", type:"trial", emoji:"🏘️", location:"滋賀県米原市", tags:["お試し移住","一棟貸切","移住相談"], price:"¥8,800〜/泊", lat:35.319, lng:136.447, url:"https://tsunagiya-knw.jp/" },
+  { id:102, name:"丹波市佐治暮らし体験住宅「竹岡邸」", area:"kinki", type:"trial", emoji:"🍂", location:"兵庫県丹波市", tags:["お試し移住","古民家","補助金あり"], price:"要問合せ", lat:35.176, lng:135.034, url:"https://www.city.tanba.lg.jp/" },
+  { id:103, name:"加西市お試し滞在施設", area:"kinki", type:"trial", emoji:"🌾", location:"兵庫県加西市", tags:["お試し移住","2施設あり","補助制度あり"], price:"要問合せ", lat:34.944, lng:134.842, url:"https://www.city.kasai.hyogo.jp/" },
+  { id:104, name:"淡路市SAKURA HOUSE", area:"kinki", type:"share", emoji:"🌸", location:"兵庫県淡路市", tags:["シェアハウス","女性専用","海が見える"], price:"要問合せ", lat:34.424, lng:134.896, url:"https://www.city.awaji.lg.jp/" },
+  { id:62, name:"三重県紀宝町お試し住宅", area:"kinki", type:"trial", emoji:"🌳", location:"三重県南牟婁郡紀宝町", tags:["お試し移住","熊野川","新宮市隣接"], price:"要問合せ", lat:33.731, lng:135.977, url:"https://omotenashi.work/column/regional-revitalization/30737" },
+  { id:63, name:"三重県尾鷲市お試し移住", area:"kinki", type:"trial", emoji:"🐟", location:"三重県尾鷲市", tags:["お試し移住","漁村体験","海・山"], price:"要問合せ", lat:34.070, lng:136.191, url:"https://omotenashi.work/column/regional-revitalization/30737" },
+  { id:201, name:"西条市移住体験ツアー", area:"shikoku", type:"trial", emoji:"🏔️", location:"愛媛県西条市", tags:["お試し移住","無料","オーダーメイド"], price:"無料", lat:33.920, lng:133.181, url:"https://www.lovesaijo.com/" },
+  { id:69, name:"香川県さぬき市 移住体験ハウス", area:"shikoku", type:"trial", emoji:"🍜", location:"香川県さぬき市", tags:["お試し移住","海側・山側","90日以内"], price:"要問合せ", lat:34.318, lng:134.185, url:"https://www.kagawalife.jp/trial/" },
+  { id:70, name:"徳島県 お試し住居施設", area:"shikoku", type:"trial", emoji:"🌊", location:"徳島県各市町村", tags:["お試し移住","県内複数","自治体運営"], price:"要問合せ", lat:34.065, lng:134.559, url:"https://iju.pref.tokushima.lg.jp/experience/" },
+  { id:71, name:"高知県大豊町お試し住宅", area:"shikoku", type:"trial", emoji:"🌿", location:"高知県長岡郡大豊町", tags:["お試し移住","四国の真ん中","古民家"], price:"要問合せ", lat:33.719, lng:133.618, url:"https://turns.jp/97128" },
   { id:33, name:"智頭町 あけびの家", area:"chugoku", type:"trial", emoji:"🌲", location:"鳥取県智頭町", tags:["お試し移住","古民家","ログハウスあり"], price:"要問合せ", lat:35.262, lng:134.213, url:"https://www1.town.chizu.tottori.jp/chizu/town/emigration/live/taiken_sanka/syukuhakutaiken/" },
   { id:34, name:"鳥取市お試し住宅", area:"chugoku", type:"trial", emoji:"🏯", location:"鳥取県鳥取市", tags:["お試し移住","4施設あり","自治体運営"], price:"要問合せ", lat:35.503, lng:134.238, url:"https://furusato.tori-info.co.jp/iju/estate/trial/" },
   { id:35, name:"安来市お試し住宅", area:"chugoku", type:"trial", emoji:"🎨", location:"島根県安来市", tags:["お試し移住","最大3ヶ月","農業研修あり"], price:"要問合せ", lat:35.431, lng:133.256, url:"https://www.city.yasugi.shimane.jp/" },
   { id:36, name:"島根県お試し暮らし体験施設", area:"chugoku", type:"trial", emoji:"⛩️", location:"島根県各市町村", tags:["お試し移住","複数施設","自治体運営"], price:"要問合せ", lat:35.472, lng:133.051, url:"https://www.kurashimanet.jp/home/trial" },
   { id:37, name:"三原市お試し住宅", area:"chugoku", type:"trial", emoji:"🐙", location:"広島県三原市", tags:["お試し移住","宿泊費補助","レンタカー補助"], price:"要問合せ", lat:34.400, lng:133.077, url:"https://www.city.mihara.hiroshima.jp/" },
   { id:38, name:"笠岡市お試し住宅", area:"chugoku", type:"trial", emoji:"🏝️", location:"岡山県笠岡市", tags:["お試し移住","島エリアあり","オーダーメイドツアー"], price:"要問合せ", lat:34.507, lng:133.509, url:"https://www.city.kasaoka.okayama.jp/" },
-  // ── 北海道 ──
+  { id:68, name:"山口県下関市お試し暮らし", area:"chugoku", type:"trial", emoji:"🐡", location:"山口県下関市", tags:["お試し移住","街中・田舎選択","4施設"], price:"要問合せ", lat:33.959, lng:130.933, url:"https://fukuju-style.jp/5524" },
+  { id:39, name:"新上五島町お試し住宅", area:"kyushu", type:"trial", emoji:"🏝️", location:"長崎県新上五島町", tags:["お試し移住","14日間無料","島暮らし"], price:"無料（14日間）", lat:32.987, lng:129.079, url:"https://shinkamigoto.nagasaki.jp/" },
+  { id:40, name:"南大隅町お試し住宅", area:"kyushu", type:"trial", emoji:"🌺", location:"鹿児島県南大隅町", tags:["お試し移住","¥1,000/泊","最南端"], price:"¥1,000/泊", lat:31.008, lng:130.672, url:"https://www.town.minamiosumi.lg.jp/" },
+  { id:41, name:"南阿蘇村お試し移住体験施設", area:"kyushu", type:"trial", emoji:"🌋", location:"熊本県南阿蘇村", tags:["お試し移住","阿蘇","費用助成あり"], price:"要問合せ", lat:32.843, lng:131.001, url:"https://minamiasoijyuu.jp/trial/" },
+  { id:42, name:"基山町移住体験住宅", area:"kyushu", type:"trial", emoji:"🏡", location:"佐賀県基山町", tags:["お試し移住","無料","福岡近郊"], price:"無料", lat:33.429, lng:130.516, url:"http://fukuoka-ijyu.jp/lp/kiyama-taiken/" },
+  { id:43, name:"大分県お試し移住施設", area:"kyushu", type:"trial", emoji:"♨️", location:"大分県杵築市", tags:["お試し移住","温泉県","最大10名"], price:"要問合せ", lat:33.411, lng:131.618, url:"https://www.iju-oita.jp/facilities" },
+  { id:44, name:"長崎県平戸市 ひらど仮暮らし体験家屋", area:"kyushu", type:"trial", emoji:"⛩️", location:"長崎県平戸市", tags:["お試し移住","古民家","離島近郊"], price:"要問合せ", lat:33.369, lng:129.555, url:"https://nagasaki-iju.jp/estate/try_housing/" },
+  { id:45, name:"佐賀県お試し住宅", area:"kyushu", type:"trial", emoji:"🏺", location:"佐賀県各市町村", tags:["お試し移住","無料〜","複数施設"], price:"無料〜", lat:33.249, lng:130.299, url:"https://www.sagasmile.com/support/trial_house" },
+  { id:46, name:"宮崎県新富町 お試し住宅", area:"kyushu", type:"trial", emoji:"🌴", location:"宮崎県新富町", tags:["お試し移住","地域商社","温暖"], price:"要問合せ", lat:32.066, lng:131.497, url:"https://www.town.shintomi.lg.jp/" },
   { id:31, name:"訓子府町移住体験住宅", area:"hokkaido", type:"trial", emoji:"🌾", location:"北海道訓子府町", tags:["お試し移住","農業","7〜30日"], price:"要問合せ", lat:43.693, lng:143.778, url:"https://www.town.kunneppu.hokkaido.jp/" },
   { id:32, name:"浦幌町移住体験住宅", area:"hokkaido", type:"trial", emoji:"🌿", location:"北海道浦幌町", tags:["お試し移住","オール電化","十勝"], price:"要問合せ", lat:42.923, lng:143.658, url:"https://www.town.urahoro.hokkaido.jp/" },
-  { id:33, name:"別海町お試し移住住宅", area:"hokkaido", type:"trial", emoji:"🐄", location:"北海道別海町", tags:["お試し移住","酪農日本一","バリアフリー"], price:"要問合せ", lat:43.401, lng:145.118, url:"https://betsukai.jp/gyosei/seisaku/ijuu/otameshiijyu/" },
-  { id:34, name:"新得町お試し暮らし住宅", area:"hokkaido", type:"trial", emoji:"🏔️", location:"北海道新得町", tags:["お試し移住","2週間〜","十勝"], price:"¥2,000〜/日", lat:43.072, lng:142.849, url:"https://shintoku-town.jp/miryoku/ijyu/otameshi/" },
-  { id:35, name:"南幌町移住体験住宅", area:"hokkaido", type:"trial", emoji:"🌾", location:"北海道南幌町", tags:["お試し移住","家族向け","自然豊か"], price:"要問合せ", lat:43.052, lng:141.624, url:"https://www.town.nanporo.hokkaido.jp/migration/experience/" },
-  { id:36, name:"安平町おためし暮らし住宅", area:"hokkaido", type:"trial", emoji:"🌲", location:"北海道安平町", tags:["お試し移住","1週間〜","子育て世帯歓迎"], price:"要問合せ", lat:42.798, lng:141.851, url:"https://www.town.abira.lg.jp/chiikishinko/ijuteiju/otameshi" },
-  { id:37, name:"厚岸町移住体験住宅", area:"hokkaido", type:"trial", emoji:"🦪", location:"北海道厚岸町", tags:["お試し移住","牡蠣の町","2週間〜2ヶ月"], price:"要問合せ", lat:43.054, lng:144.849, url:"https://www.akkeshi-town.jp/izyuu/chottokkurashi/" },
-  { id:38, name:"西いぶり お試し移住", area:"hokkaido", type:"trial", emoji:"🌊", location:"北海道西胆振エリア", tags:["お試し移住","温泉","洞爺湖"], price:"要問合せ", lat:42.552, lng:140.887, url:"https://nishiiburi.jpn.org/otamesi/" },
-  // ── 北海道 道南エリア ──
-  // ── 北海道 上川エリア ──
+  { id:301, name:"別海町お試し移住住宅", area:"hokkaido", type:"trial", emoji:"🐄", location:"北海道別海町", tags:["お試し移住","酪農日本一","バリアフリー"], price:"要問合せ", lat:43.401, lng:145.118, url:"https://betsukai.jp/gyosei/seisaku/ijuu/otameshiijyu/" },
+  { id:302, name:"新得町お試し暮らし住宅", area:"hokkaido", type:"trial", emoji:"🏔️", location:"北海道新得町", tags:["お試し移住","2週間〜","十勝"], price:"¥2,000〜/日", lat:43.072, lng:142.849, url:"https://shintoku-town.jp/miryoku/ijyu/otameshi/" },
+  { id:303, name:"南幌町移住体験住宅", area:"hokkaido", type:"trial", emoji:"🌾", location:"北海道南幌町", tags:["お試し移住","家族向け","自然豊か"], price:"要問合せ", lat:43.052, lng:141.624, url:"https://www.town.nanporo.hokkaido.jp/migration/experience/" },
+  { id:304, name:"安平町おためし暮らし住宅", area:"hokkaido", type:"trial", emoji:"🌲", location:"北海道安平町", tags:["お試し移住","1週間〜","子育て世帯歓迎"], price:"要問合せ", lat:42.798, lng:141.851, url:"https://www.town.abira.lg.jp/chiikishinko/ijuteiju/otameshi" },
+  { id:305, name:"厚岸町移住体験住宅", area:"hokkaido", type:"trial", emoji:"🦪", location:"北海道厚岸町", tags:["お試し移住","牡蠣の町","2週間〜2ヶ月"], price:"要問合せ", lat:43.054, lng:144.849, url:"https://www.akkeshi-town.jp/izyuu/chottokkurashi/" },
+  { id:306, name:"西いぶり お試し移住", area:"hokkaido", type:"trial", emoji:"🌊", location:"北海道西胆振エリア", tags:["お試し移住","温泉","洞爺湖"], price:"要問合せ", lat:42.552, lng:140.887, url:"https://nishiiburi.jpn.org/otamesi/" },
   { id:72, name:"旭川市ちょっと暮らし", area:"hokkaido", type:"trial", emoji:"🦢", location:"北海道旭川市", tags:["お試し移住","道内第2都市","大雪山"], price:"要問合せ", lat:43.770, lng:142.365, url:"https://www.kamikawa.pref.hokkaido.lg.jp/ts/tss/iju/kamipotal_area01.html" },
   { id:73, name:"鷹栖町ちょっと暮らし", area:"hokkaido", type:"trial", emoji:"🌾", location:"北海道鷹栖町", tags:["お試し移住","旭川隣接","農業体験"], price:"要問合せ", lat:43.807, lng:142.395, url:"https://www.kamikawa.pref.hokkaido.lg.jp/ts/tss/iju/kamipotal_area02.html" },
   { id:74, name:"上川町ちょっと暮らし", area:"hokkaido", type:"trial", emoji:"🍁", location:"北海道上川町", tags:["お試し移住","大雪山","層雲峡"], price:"要問合せ", lat:43.851, lng:142.777, url:"https://www.kamikawa.pref.hokkaido.lg.jp/ts/tss/iju/kamipotal_area07.html" },
@@ -313,7 +229,6 @@ const facilities = [
   { id:81, name:"音威子府村ちょっと暮らし", area:"hokkaido", type:"trial", emoji:"🍜", location:"北海道音威子府村", tags:["お試し移住","黒いそば","最小の村"], price:"要問合せ", lat:44.739, lng:142.195, url:"https://www.kamikawa.pref.hokkaido.lg.jp/ts/tss/iju/kamipotal_area21.html" },
   { id:82, name:"中川町ちょっと暮らし", area:"hokkaido", type:"trial", emoji:"🦕", location:"北海道中川町", tags:["お試し移住","恐竜化石","天塩川"], price:"要問合せ", lat:44.857, lng:142.072, url:"https://www.kamikawa.pref.hokkaido.lg.jp/ts/tss/iju/kamipotal_area22.html" },
   { id:83, name:"幌加内町ちょっと暮らし", area:"hokkaido", type:"trial", emoji:"🌾", location:"北海道幌加内町", tags:["お試し移住","そばの里","朱鞠内湖"], price:"要問合せ", lat:44.365, lng:142.136, url:"https://www.kamikawa.pref.hokkaido.lg.jp/ts/tss/iju/kamipotal_area23.html" },
-  // ── 北海道 十勝エリア ──
   { id:84, name:"士幌町 農園付き移住体験住宅", area:"hokkaido", type:"trial", emoji:"🌽", location:"北海道士幌町", tags:["お試し移住","農園付き","最大3年"], price:"¥40,000〜/月", lat:43.278, lng:143.266, url:"https://www.shihoro.jp/move/" },
   { id:85, name:"上士幌町 にっぽうの家", area:"hokkaido", type:"dual", emoji:"🎈", location:"北海道上士幌町", tags:["二拠点","気球の町","コワーキング"], price:"要問合せ", lat:43.199, lng:143.277, url:"https://kamishihoro.today/" },
   { id:86, name:"清水町 移住体験住宅（無印良品仕様）", area:"hokkaido", type:"trial", emoji:"🏡", location:"北海道清水町", tags:["お試し移住","無印良品","ペット可棟あり"], price:"¥10,000/月〜", lat:43.011, lng:142.879, url:"https://www.town.shimizu.hokkaido.jp/tourism/details/post_21.html" },
@@ -321,37 +236,6 @@ const facilities = [
   { id:88, name:"池田町 移住定住体験住宅", area:"hokkaido", type:"trial", emoji:"🍷", location:"北海道池田町", tags:["お試し移住","十勝ワイン","7日〜1年"], price:"¥1,850〜/日", lat:42.519, lng:143.450, url:"https://www.town.hokkaido-ikeda.lg.jp/kurashi/jutaku/5914.html" },
   { id:89, name:"釧路市ちょっと暮らし", area:"hokkaido", type:"trial", emoji:"🦩", location:"北海道釧路市", tags:["お試し移住","11年連続人気1位","釧路湿原"], price:"要問合せ", lat:42.985, lng:144.381, url:"https://www.city.kushiro.lg.jp/shisei/soshiki/chiiki/iju/index.html" },
   { id:90, name:"帯広市ちょっと暮らし", area:"hokkaido", type:"trial", emoji:"🍰", location:"北海道帯広市", tags:["お試し移住","スイーツの街","コンドミニアム"], price:"要問合せ", lat:42.924, lng:143.196, url:"https://obihiro-iju.com/" },
-  // ── 九州 ──
-  { id:39, name:"新上五島町お試し住宅", area:"kyushu", type:"trial", emoji:"🏝️", location:"長崎県新上五島町", tags:["お試し移住","14日間無料","島暮らし"], price:"無料（14日間）", lat:32.987, lng:129.079, url:"https://shinkamigoto.nagasaki.jp/" },
-  { id:40, name:"南大隅町お試し住宅", area:"kyushu", type:"trial", emoji:"🌺", location:"鹿児島県南大隅町", tags:["お試し移住","¥1,000/泊","最南端"], price:"¥1,000/泊", lat:31.008, lng:130.672, url:"https://www.town.minamiosumi.lg.jp/" },
-  { id:41, name:"南阿蘇村お試し移住体験施設", area:"kyushu", type:"trial", emoji:"🌋", location:"熊本県南阿蘇村", tags:["お試し移住","阿蘇","費用助成あり"], price:"要問合せ", lat:32.843, lng:131.001, url:"https://minamiasoijyuu.jp/trial/" },
-  { id:42, name:"基山町移住体験住宅", area:"kyushu", type:"trial", emoji:"🏡", location:"佐賀県基山町", tags:["お試し移住","無料","福岡近郊"], price:"無料", lat:33.429, lng:130.516, url:"http://fukuoka-ijyu.jp/lp/kiyama-taiken/" },
-  { id:43, name:"大分県お試し移住施設", area:"kyushu", type:"trial", emoji:"♨️", location:"大分県杵築市", tags:["お試し移住","温泉県","最大10名"], price:"要問合せ", lat:33.411, lng:131.618, url:"https://www.iju-oita.jp/facilities" },
-  { id:44, name:"長崎県平戸市 ひらど仮暮らし体験家屋", area:"kyushu", type:"trial", emoji:"⛩️", location:"長崎県平戸市", tags:["お試し移住","古民家","離島近郊"], price:"要問合せ", lat:33.369, lng:129.555, url:"https://nagasaki-iju.jp/estate/try_housing/" },
-  { id:45, name:"佐賀県お試し住宅", area:"kyushu", type:"trial", emoji:"🏺", location:"佐賀県各市町村", tags:["お試し移住","無料〜","複数施設"], price:"無料〜", lat:33.249, lng:130.299, url:"https://www.sagasmile.com/support/trial_house" },
-  { id:46, name:"宮崎県新富町 お試し住宅", area:"kyushu", type:"trial", emoji:"🌴", location:"宮崎県新富町", tags:["お試し移住","地域商社","温暖"], price:"要問合せ", lat:32.066, lng:131.497, url:"https://www.town.shintomi.lg.jp/" },
-  // ── 関東（新規） ──
-  { id:48, name:"常陸太田市 トライアルハウス", area:"kanto", type:"trial", emoji:"🏯", location:"茨城県常陸太田市", tags:["お試し移住","2施設","竜神大吊橋"], price:"要問合せ", lat:36.531, lng:140.528, url:"https://iju-ibaraki.jp/residence/stay/" },
-  { id:49, name:"鹿沼市お試し住宅", area:"kanto", type:"trial", emoji:"🌲", location:"栃木県鹿沼市", tags:["お試し移住","家賃無料〜","自治体運営"], price:"無料〜", lat:36.561, lng:139.735, url:"https://www.tochigi-iju.jp/house/trial/" },
-  { id:50, name:"沼田市 ぬまた暮らし体験住宅", area:"kanto", type:"trial", emoji:"🏔️", location:"群馬県沼田市", tags:["お試し移住","薪ストーブ","谷川岳近く"], price:"要問合せ", lat:36.648, lng:139.036, url:"https://smout.jp/features/31/plans" },
-  { id:51, name:"多古町お試し移住", area:"kanto", type:"trial", emoji:"🌾", location:"千葉県多古町", tags:["お試し移住","農業体験","観光では見えない暮らし"], price:"要問合せ", lat:35.731, lng:140.494, url:"https://www.town.tako.chiba.jp/" },
-  // ── 中部（新規） ──
-  { id:52, name:"岩手県 いわてお試し居住体験", area:"tohoku", type:"trial", emoji:"🏔️", location:"岩手県各市町村", tags:["お試し移住","月1万円","県営住宅"], price:"¥10,000/月", lat:39.703, lng:141.153, url:"https://www.pref.iwate.jp/kurashikankyou/kenchiku/kenei/1065217.html" },
-  { id:53, name:"盛岡市お試し移住体験", area:"tohoku", type:"trial", emoji:"🏙️", location:"岩手県盛岡市", tags:["お試し移住","まちなか","コンパクトシティ"], price:"要問合せ", lat:39.703, lng:141.153, url:"https://www.city.morioka.iwate.jp/kurashi/1027362/1028074/1046679.html" },
-  { id:54, name:"青森市 まちなか移住体験施設", area:"tohoku", type:"trial", emoji:"🍎", location:"青森県青森市", tags:["お試し移住","古民家石木邸","5市町村連携"], price:"無料", lat:40.824, lng:140.740, url:"https://www.city.aomori.aomori.jp/renkeisuisin/kurashi-guide/sumai/iju-teiju/otamesiijyu.html" },
-  { id:55, name:"青森県南部町お試し住宅", area:"tohoku", type:"trial", emoji:"🌾", location:"青森県三戸郡南部町", tags:["お試し移住","無料","PC3台貸出"], price:"無料", lat:40.454, lng:141.314, url:"https://turns.jp/97128" },
-  { id:56, name:"山形県河北町お試し住宅", area:"tohoku", type:"trial", emoji:"🍒", location:"山形県西村山郡河北町", tags:["お試し移住","5DK","就農体験"], price:"要問合せ", lat:38.467, lng:140.373, url:"https://turns.jp/97128" },
-  { id:57, name:"山形県酒田市 お試し移住", area:"tohoku", type:"trial", emoji:"🌊", location:"山形県酒田市", tags:["お試し移住","市街地・郊外選択","日本海"], price:"要問合せ", lat:38.914, lng:139.836, url:"https://yamagata-iju.jp/kurashi/exphouse/" },
-  // ── 中部（新規） ──
-  // ── 近畿（新規） ──
-  { id:62, name:"三重県紀宝町お試し住宅", area:"kinki", type:"trial", emoji:"🌳", location:"三重県南牟婁郡紀宝町", tags:["お試し移住","熊野川","新宮市隣接"], price:"要問合せ", lat:33.731, lng:135.977, url:"https://omotenashi.work/column/regional-revitalization/30737" },
-  { id:63, name:"三重県尾鷲市お試し移住", area:"kinki", type:"trial", emoji:"🐟", location:"三重県尾鷲市", tags:["お試し移住","漁村体験","海・山"], price:"要問合せ", lat:34.070, lng:136.191, url:"https://omotenashi.work/column/regional-revitalization/30737" },
-  // ── 中国（新規） ──
-  { id:68, name:"山口県下関市お試し暮らし", area:"chugoku", type:"trial", emoji:"🐡", location:"山口県下関市", tags:["お試し移住","街中・田舎選択","4施設"], price:"要問合せ", lat:33.959, lng:130.933, url:"https://fukuju-style.jp/5524" },
-  // ── 四国（新規） ──
-  { id:69, name:"香川県さぬき市 移住体験ハウス", area:"shikoku", type:"trial", emoji:"🍜", location:"香川県さぬき市", tags:["お試し移住","海側・山側","90日以内"], price:"要問合せ", lat:34.318, lng:134.185, url:"https://www.kagawalife.jp/trial/" },
-  { id:70, name:"徳島県 お試し住居施設", area:"shikoku", type:"trial", emoji:"🌊", location:"徳島県各市町村", tags:["お試し移住","県内複数","自治体運営"], price:"要問合せ", lat:34.065, lng:134.559, url:"https://iju.pref.tokushima.lg.jp/experience/" },
-  { id:71, name:"高知県大豊町お試し住宅", area:"shikoku", type:"trial", emoji:"🌿", location:"高知県長岡郡大豊町", tags:["お試し移住","四国の真ん中","古民家"], price:"要問合せ", lat:33.719, lng:133.618, url:"https://turns.jp/97128" },
 ];
 
 const typeColors = {
@@ -371,45 +255,32 @@ const areaBounds = {
   kyushu:  [[28,128],[34,133]],
 };
 
-let typeFilter = "all";
-let areaFilter = "all";
-let query = "";
-let markers = [];
-let sheetExpanded = true;
+let typeFilter="all", areaFilter="all", query="", markers=[], sheetExpanded=true;
+const TWO_HOUR_DEG = 0.5;
 
-// 2時間圏内 ≒ 約150km を緯度経度のオフセットに換算（緯度1度≒111km）
-const TWO_HOUR_DEG = 0.5; // 約55km分
-
-// IPジオロケーションで現在地を取得し、2時間圏内を初期表示
-// 取得できなければ全国表示にフォールバック
 const map = L.map('map', {zoomControl:true});
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution:'© OpenStreetMap contributors', maxZoom:18
 }).addTo(map);
 
-// ipwho.isで現在地取得 → 失敗時は全国表示
 (async () => {
   let bounds = [[24,122],[46,146]];
   try {
     const res = await Promise.race([
       fetch("https://ipwho.is/"),
-      new Promise((_,reject) => setTimeout(() => reject(), 4000))
+      new Promise((_,reject) => setTimeout(()=>reject(),4000))
     ]);
     const d = await res.json();
     if (d && d.success && d.latitude && d.longitude) {
-      const lat = parseFloat(d.latitude);
-      const lng = parseFloat(d.longitude);
-      if (lat >= 24 && lat <= 46 && lng >= 122 && lng <= 146) {
-        bounds = [[lat-TWO_HOUR_DEG, lng-TWO_HOUR_DEG*1.4],[lat+TWO_HOUR_DEG, lng+TWO_HOUR_DEG*1.4]];
-      }
+      const lat = parseFloat(d.latitude), lng = parseFloat(d.longitude);
+      if (lat>=24&&lat<=46&&lng>=122&&lng<=146)
+        bounds = [[lat-TWO_HOUR_DEG,lng-TWO_HOUR_DEG*1.4],[lat+TWO_HOUR_DEG,lng+TWO_HOUR_DEG*1.4]];
     }
   } catch(e) {}
-  map.fitBounds(bounds, { animate: false });
+  map.fitBounds(bounds, {animate:false});
   render();
 })();
 
-
-// ── 定住率レイヤー ──
 const teijuRate = {
   '北海道':76.8,'青森県':71.7,'岩手県':62.9,'宮城県':67.0,'秋田県':55.0,
   '山形県':66.7,'福島県':65.5,'茨城県':61.5,'栃木県':75.0,'群馬県':65.1,
@@ -422,64 +293,43 @@ const teijuRate = {
   '高知県':73.7,'福岡県':66.7,'佐賀県':null,'長崎県':60.0,'熊本県':66.7,
   '大分県':73.0,'宮崎県':59.8,'鹿児島県':68.9,'沖縄県':57.8
 };
-// 50人以上の県のみ有効（nullは母数不足）
-// 実際の50人以上チェック済み（PDFデータより）
 
-let prefLayer = null;
-let heatmapVisible = false;
+let prefLayer=null, heatmapVisible=false;
 
 function getTeijuColor(rate) {
-  if (rate === null) return 'rgba(180,180,180,0.15)';
-  // 55%〜78% をグラデーション
-  // 低い=オレンジ系、高い=緑系
-  const min = 55, max = 78;
-  const t = Math.max(0, Math.min(1, (rate - min) / (max - min)));
-  const r = Math.round(220 - t * 130);
-  const g = Math.round(100 + t * 100);
-  const b = Math.round(50 + t * 30);
-  return `rgba(${r},${g},${b},0.35)`;
+  if (rate===null) return 'rgba(180,180,180,0.15)';
+  const t = Math.max(0,Math.min(1,(rate-55)/(78-55)));
+  return `rgba(${Math.round(220-t*130)},${Math.round(100+t*100)},${Math.round(50+t*30)},0.35)`;
 }
 
 function toggleHeatmap() {
   heatmapVisible = !heatmapVisible;
-  const btn = document.getElementById('heatmap-btn');
-  const dot = document.getElementById('heatmap-dot');
-  const legend = document.getElementById('heatmap-legend');
+  const btn=document.getElementById('heatmap-btn');
+  const ctrl=document.getElementById('heatmap-control');
+  const legend=document.getElementById('heatmap-legend');
   if (heatmapVisible) {
-    btn.classList.add('on');
-    dot.classList.add('on');
-    legend.classList.add('visible');
+    btn.classList.add('on'); ctrl.classList.add('expanded'); legend.classList.add('visible');
     loadHeatmap();
   } else {
-    btn.classList.remove('on');
-    dot.classList.remove('on');
-    legend.classList.remove('visible');
-    if (prefLayer) { map.removeLayer(prefLayer); prefLayer = null; }
+    btn.classList.remove('on'); ctrl.classList.remove('expanded'); legend.classList.remove('visible');
+    if (prefLayer) { map.removeLayer(prefLayer); prefLayer=null; }
   }
 }
 
 function loadHeatmap() {
   fetch('https://raw.githubusercontent.com/dataofjapan/land/master/japan.geojson')
-    .then(r => r.json())
-    .then(data => {
+    .then(r=>r.json()).then(data => {
       if (prefLayer) map.removeLayer(prefLayer);
       prefLayer = L.geoJSON(data, {
         style: f => {
-          const name = f.properties.nam_ja;
-          const rate = teijuRate[name] !== undefined ? teijuRate[name] : null;
-          return {
-            fillColor: getTeijuColor(rate),
-            fillOpacity: 1,
-            color: rate !== null ? 'rgba(100,130,100,0.4)' : 'rgba(150,150,150,0.2)',
-            weight: 0.8
-          };
+          const name=f.properties.nam_ja;
+          const rate=teijuRate[name]!==undefined?teijuRate[name]:null;
+          return { fillColor:getTeijuColor(rate), fillOpacity:1, color:rate!==null?'rgba(100,130,100,0.4)':'rgba(150,150,150,0.2)', weight:0.8 };
         },
-        onEachFeature: (f, layer) => {
-          const name = f.properties.nam_ja;
-          const rate = teijuRate[name];
-          if (rate !== null && rate !== undefined) {
-            layer.bindTooltip(`${name}<br>定住率 ${rate}%`, {sticky:true, className:'pref-tooltip'});
-          }
+        onEachFeature: (f,layer) => {
+          const name=f.properties.nam_ja, rate=teijuRate[name];
+          if (rate!==null&&rate!==undefined)
+            layer.bindTooltip(`${name}<br>定住率 ${rate}%`,{sticky:true,className:'pref-tooltip'});
         }
       }).addTo(map);
       prefLayer.bringToBack();
@@ -487,128 +337,75 @@ function loadHeatmap() {
 }
 
 function createIcon(f) {
-  const c = typeColors[f.type];
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40">
-    <path d="M16 0C7.16 0 0 7.16 0 16c0 11 16 24 16 24s16-13 16-24C32 7.16 24.84 0 16 0z" fill="${c.btn}" opacity="0.95"/>
-    <circle cx="16" cy="15" r="9" fill="white"/>
-    <text x="16" y="19" text-anchor="middle" font-size="11">${f.emoji}</text>
-  </svg>`;
-  return L.divIcon({ html:svg, iconSize:[32,40], iconAnchor:[16,40], popupAnchor:[0,-42], className:'' });
+  const c=typeColors[f.type];
+  return L.divIcon({html:`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40"><path d="M16 0C7.16 0 0 7.16 0 16c0 11 16 24 16 24s16-13 16-24C32 7.16 24.84 0 16 0z" fill="${c.btn}" opacity="0.95"/><circle cx="16" cy="15" r="9" fill="white"/><text x="16" y="19" text-anchor="middle" font-size="11">${f.emoji}</text></svg>`,iconSize:[32,40],iconAnchor:[16,40],popupAnchor:[0,-42],className:''});
 }
 
-const sheet = document.getElementById("bottom-sheet");
-const upBtn = document.getElementById("up-btn");
+const sheet=document.getElementById("bottom-sheet"), upBtn=document.getElementById("up-btn");
+function isMobile(){return window.innerWidth<=640;}
+function expandSheet(){sheetExpanded=true;sheet.style.maxHeight="55dvh";upBtn.classList.remove("visible");}
+function collapseSheet(){sheetExpanded=false;sheet.style.maxHeight="0px";if(isMobile())upBtn.classList.add("visible");}
 
-function isMobile() { return window.innerWidth <= 640; }
-
-function expandSheet() {
-  sheetExpanded = true;
-  sheet.style.maxHeight = "55dvh";
-  upBtn.classList.remove("visible");
-}
-
-function collapseSheet() {
-  sheetExpanded = false;
-  sheet.style.maxHeight = "0px";
-  if (isMobile()) upBtn.classList.add("visible");
-}
-
-const handle = document.getElementById("sheet-handle");
-let touchStartY = 0;
-handle.addEventListener("touchstart", e => { touchStartY = e.touches[0].clientY; }, { passive:true });
-handle.addEventListener("touchend", e => {
-  const diff = e.changedTouches[0].clientY - touchStartY;
-  if (diff > 10) collapseSheet();
-  else if (diff < -10) expandSheet();
-  else sheetExpanded ? collapseSheet() : expandSheet();
-}, { passive:true });
-handle.addEventListener("click", () => { sheetExpanded ? collapseSheet() : expandSheet(); });
-
-upBtn.addEventListener("click", expandSheet);
-map.on("click", () => { if(isMobile()) collapseSheet(); });
+const handle=document.getElementById("sheet-handle");
+let touchStartY=0;
+handle.addEventListener("touchstart",e=>{touchStartY=e.touches[0].clientY;},{passive:true});
+handle.addEventListener("touchend",e=>{
+  const diff=e.changedTouches[0].clientY-touchStartY;
+  if(diff>10)collapseSheet();else if(diff<-10)expandSheet();else sheetExpanded?collapseSheet():expandSheet();
+},{passive:true});
+handle.addEventListener("click",()=>{sheetExpanded?collapseSheet():expandSheet();});
+upBtn.addEventListener("click",expandSheet);
+map.on("click",()=>{if(isMobile())collapseSheet();});
 
 function render() {
-  const filtered = facilities.filter(f => {
-    if (typeFilter !== "all" && f.type !== typeFilter) return false;
-    if (areaFilter !== "all" && f.area !== areaFilter) return false;
-    if (query && !f.name.includes(query) && !f.location.includes(query)) return false;
+  const filtered=facilities.filter(f=>{
+    if(typeFilter!=="all"&&f.type!==typeFilter)return false;
+    if(areaFilter!=="all"&&f.area!==areaFilter)return false;
+    if(query&&!f.name.includes(query)&&!f.location.includes(query))return false;
     return true;
   });
-
-  markers.forEach(m => map.removeLayer(m));
-  markers = [];
-  filtered.forEach(f => {
-    const tc = typeColors[f.type];
-    const marker = L.marker([f.lat, f.lng], { icon: createIcon(f) }).addTo(map);
-    const btnHtml = f.url
-      ? `<a class="popup-link" href="${f.url}" target="_blank" style="background:${tc.btn}">詳細を見る →</a>`
-      : `<span class="popup-nolink" style="background:${tc.btn}">詳細準備中</span>`;
-    marker.bindPopup(`
-      <div class="popup-img" style="background:${tc.img}">${f.emoji}</div>
-      <div class="popup-body">
-        <div class="popup-name">${f.name}</div>
-        <div class="popup-loc">📍 ${f.location}</div>
-        <div class="popup-tags">${f.tags.map(t=>`<span class="popup-tag">${t}</span>`).join('')}</div>
-        <div class="popup-price" style="color:${tc.text}">${f.price}</div>
-        ${btnHtml}
-      </div>`, { maxWidth:240 });
+  markers.forEach(m=>map.removeLayer(m)); markers=[];
+  filtered.forEach(f=>{
+    const tc=typeColors[f.type];
+    const marker=L.marker([f.lat,f.lng],{icon:createIcon(f)}).addTo(map);
+    const btnHtml=f.url?`<a class="popup-link" href="${f.url}" target="_blank" style="background:${tc.btn}">詳細を見る →</a>`:`<span class="popup-nolink" style="background:${tc.btn}">詳細準備中</span>`;
+    marker.bindPopup(`<div class="popup-img" style="background:${tc.img}">${f.emoji}</div><div class="popup-body"><div class="popup-name">${f.name}</div><div class="popup-loc">📍 ${f.location}</div><div class="popup-tags">${f.tags.map(t=>`<span class="popup-tag">${t}</span>`).join('')}</div><div class="popup-price" style="color:${tc.text}">${f.price}</div>${btnHtml}</div>`,{maxWidth:240});
     markers.push(marker);
   });
-
-  // エリアフィルターが選択されている場合はそちらを優先
-  if (areaFilter !== "all") {
-    map.fitBounds(areaBounds[areaFilter], { animate:true });
-  }
-
-  document.getElementById("count").textContent = filtered.length;
-  document.getElementById("count2").textContent = filtered.length;
-
-  const html = filtered.map((f,i) => {
-    const tc = typeColors[f.type];
-    return `<div class="pitem" data-idx="${i}" onclick="focusMarker(${i})">
-      <div class="pitem-emoji" style="background:${tc.img}">${f.emoji}</div>
-      <div>
-        <div class="pitem-name">${f.name}</div>
-        <div class="pitem-loc">📍 ${f.location}</div>
-        <div class="pitem-tags">${f.tags.slice(0,2).map(t=>`<span class="ptag">${t}</span>`).join('')}</div>
-      </div>
-    </div>`;
+  if(areaFilter!=="all")map.fitBounds(areaBounds[areaFilter],{animate:true});
+  document.getElementById("count").textContent=filtered.length;
+  document.getElementById("count2").textContent=filtered.length;
+  const html=filtered.map((f,i)=>{
+    const tc=typeColors[f.type];
+    return `<div class="pitem" data-idx="${i}" onclick="focusMarker(${i})"><div class="pitem-emoji" style="background:${tc.img}">${f.emoji}</div><div><div class="pitem-name">${f.name}</div><div class="pitem-loc">📍 ${f.location}</div><div class="pitem-tags">${f.tags.slice(0,2).map(t=>`<span class="ptag">${t}</span>`).join('')}</div></div></div>`;
   }).join('');
-  document.getElementById("panel-list").innerHTML = html;
-  document.getElementById("sheet-list").innerHTML = html;
-  window._filtered = filtered;
+  document.getElementById("panel-list").innerHTML=html;
+  document.getElementById("sheet-list").innerHTML=html;
+  window._filtered=filtered;
 }
 
 function focusMarker(idx) {
-  const f = window._filtered[idx];
-  map.setView([f.lat, f.lng], 11, { animate:true });
+  const f=window._filtered[idx];
+  map.setView([f.lat,f.lng],11,{animate:true});
   markers[idx].openPopup();
-  document.querySelectorAll('.pitem').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll(`.pitem[data-idx="${idx}"]`).forEach(el => el.classList.add('active'));
-  if(isMobile()) collapseSheet();
+  document.querySelectorAll('.pitem').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll(`.pitem[data-idx="${idx}"]`).forEach(el=>el.classList.add('active'));
+  if(isMobile())collapseSheet();
 }
 
-document.querySelectorAll("[data-type]").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll("[data-type]").forEach(b => b.className="chip");
-    btn.classList.add("active-green");
-    typeFilter = btn.dataset.type;
-    render();
+document.querySelectorAll("[data-type]").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll("[data-type]").forEach(b=>b.className="chip");
+    btn.classList.add("active-green"); typeFilter=btn.dataset.type; render();
   });
 });
-document.querySelectorAll("[data-area]").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll("[data-area]").forEach(b => b.className="chip");
-    btn.classList.add("active-orange");
-    areaFilter = btn.dataset.area;
-    render();
+document.querySelectorAll("[data-area]").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll("[data-area]").forEach(b=>b.className="chip");
+    btn.classList.add("active-orange"); areaFilter=btn.dataset.area; render();
   });
 });
-document.getElementById("search").addEventListener("input", e => {
-  query = e.target.value;
-  render();
-});
+document.getElementById("search").addEventListener("input",e=>{query=e.target.value;render();});
 </script>
-
 </body>
 </html>
