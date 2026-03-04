@@ -24,7 +24,7 @@ header { background:#fff; border-bottom:1px solid #e0dbd2; display:flex; align-i
 
 /* 定住率コントロール：ズームボタン下・左上 */
 .heatmap-control {
-  position: absolute; left: 10px; top: 90px; z-index: 1000;
+  position: absolute; left: 10px; top: 66px; z-index: 1000;
   background: rgba(255,255,255,0.95); border-radius: 4px;
   box-shadow: 0 1px 5px rgba(0,0,0,0.25);
   width: 34px; overflow: hidden; transition: width 0.25s ease;
@@ -265,18 +265,33 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 (async () => {
   let bounds = [[24,122],[46,146]];
-  try {
+
+  async function tryGeo(url, extract) {
     const res = await Promise.race([
-      fetch("https://ipwho.is/"),
-      new Promise((_,reject) => setTimeout(()=>reject(),4000))
+      fetch(url), new Promise((_,r)=>setTimeout(()=>r(new Error()),3500))
     ]);
     const d = await res.json();
-    if (d && d.success && d.latitude && d.longitude) {
-      const lat = parseFloat(d.latitude), lng = parseFloat(d.longitude);
-      if (lat>=24&&lat<=46&&lng>=122&&lng<=146)
-        bounds = [[lat-TWO_HOUR_DEG,lng-TWO_HOUR_DEG*1.4],[lat+TWO_HOUR_DEG,lng+TWO_HOUR_DEG*1.4]];
-    }
-  } catch(e) {}
+    return extract(d);
+  }
+
+  const apis = [
+    ["https://ipwho.is/",       d => d.success ? {lat:d.latitude, lng:d.longitude} : null],
+    ["https://freeipapi.com/api/json", d => d.latitude ? {lat:d.latitude, lng:d.longitude} : null],
+    ["https://ipapi.co/json/",  d => d.latitude ? {lat:d.latitude, lng:d.longitude} : null],
+    ["https://ip.seeip.org/geoip", d => d.latitude ? {lat:d.latitude, lng:d.longitude} : null],
+  ];
+
+  for (const [url, extract] of apis) {
+    try {
+      const pos = await tryGeo(url, extract);
+      if (pos && pos.lat >= 24 && pos.lat <= 46 && pos.lng >= 122 && pos.lng <= 146) {
+        bounds = [[pos.lat-TWO_HOUR_DEG, pos.lng-TWO_HOUR_DEG*1.4],
+                  [pos.lat+TWO_HOUR_DEG, pos.lng+TWO_HOUR_DEG*1.4]];
+        break;
+      }
+    } catch(e) {}
+  }
+
   map.fitBounds(bounds, {animate:false});
   render();
 })();
@@ -297,9 +312,9 @@ const teijuRate = {
 let prefLayer=null, heatmapVisible=false;
 
 function getTeijuColor(rate) {
-  if (rate===null) return 'rgba(180,180,180,0.15)';
+  if (rate===null) return 'rgba(180,180,180,0.35)';
   const t = Math.max(0,Math.min(1,(rate-55)/(78-55)));
-  return `rgba(${Math.round(220-t*130)},${Math.round(100+t*100)},${Math.round(50+t*30)},0.35)`;
+  return `rgba(${Math.round(220-t*130)},${Math.round(100+t*100)},${Math.round(50+t*30)},0.55)`;
 }
 
 function toggleHeatmap() {
